@@ -1,0 +1,40 @@
+import { z } from 'zod'
+
+/**
+ * 학생 생성/수정 스키마
+ */
+export const StudentSchema = z.object({
+  name: z.string().min(1, '이름을 입력해주세요'),
+  email: z.string().email('올바른 이메일 형식이 아닙니다').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  school: z.string().min(1, '학교를 입력해주세요'),
+  grade: z.enum(['중1', '중2', '중3', '고1', '고2', '고3', '재수'], {
+    errorMap: () => ({ message: '학년을 선택해주세요' })
+  }),
+  parent_name: z.string().min(1, '학부모 이름을 입력해주세요'),
+  parent_phone: z.string().min(1, '학부모 전화번호를 입력해주세요'),
+  parent_email: z.string().email('올바른 이메일 형식이 아닙니다').optional().or(z.literal('')),
+  address: z.string().optional(),
+  subjects: z.array(z.string()).default([]),
+  status: z.enum(['active', 'inactive', 'graduated']).default('active'),
+  goals: z.string().optional(),
+  notes: z.string().optional(),
+})
+
+export type StudentInput = z.infer<typeof StudentSchema>
+
+/**
+ * 상담 신청 스키마
+ */
+export const ConsultationSchema = z.object({
+  student_name: z.string().min(1, '학생 이름을 입력해주세요'),
+  student_grade: z.number().int().min(1).max(12).optional(),
+  parent_name: z.string().min(1, '학부모 이름을 입력해주세요'),
+  parent_phone: z.string().min(1, '전화번호를 입력해주세요'),
+  parent_email: z.string().email('올바른 이메일 형식이 아닙니다').optional(),
+  interests: z.array(z.string()).optional(),
+  goals: z.string().optional(),
+  preferred_times: z.string().optional(),
+})
+
+export type ConsultationInput = z.infer<typeof ConsultationSchema>

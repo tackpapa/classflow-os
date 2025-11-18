@@ -114,6 +114,7 @@ const mockStudents: Student[] = [
     address: '서울시 강남구',
     subjects: ['수학', '영어'],
     status: 'active',
+    enrollment_date: '2025-01-01',
     notes: '성실한 학생',
   },
   {
@@ -130,6 +131,7 @@ const mockStudents: Student[] = [
     parent_email: 'parent2@example.com',
     subjects: ['국어', '사회'],
     status: 'active',
+    enrollment_date: '2025-01-02',
   },
   {
     id: '3',
@@ -144,6 +146,7 @@ const mockStudents: Student[] = [
     parent_phone: '010-7654-3210',
     subjects: ['수학', '과학'],
     status: 'active',
+    enrollment_date: '2025-01-03',
   },
 ]
 

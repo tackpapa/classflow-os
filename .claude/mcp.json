@@ -1,5 +1,12 @@
 {
   "mcpServers": {
+    "superagent": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@superclaude-org/superagent"
+      ]
+    },
     "supabase": {
       "command": "npx",
       "args": [

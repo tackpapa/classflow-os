@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { ColumnDef } from '@tanstack/react-table'
 import { usePageAccess } from '@/hooks/use-page-access'
-import { PagePermissions } from '@/components/page-permissions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { DataTable } from '@/components/ui/data-table'
@@ -27,7 +26,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import { Plus, Pencil, Trash2, MoreHorizontal, Users } from 'lucide-react'
+import { Plus, Pencil, Trash2, MoreHorizontal, Users, Search } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ClassSchema, type ClassInput } from '@/lib/validations/class'
@@ -38,6 +37,38 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+
+// Mock students for student assignment
+const mockStudents = [
+  { id: '1', name: '김민준', grade: '고1', school: '강남고등학교' },
+  { id: '2', name: '이서연', grade: '고2', school: '서울고등학교' },
+  { id: '3', name: '박지훈', grade: '중3', school: '서울중학교' },
+  { id: '4', name: '최유진', grade: '고3', school: '강남고등학교' },
+  { id: '5', name: '정서준', grade: '중1', school: '대치중학교' },
+  { id: '6', name: '강하늘', grade: '고2', school: '대원고등학교' },
+  { id: '7', name: '조민서', grade: '중2', school: '서울중학교' },
+  { id: '8', name: '윤채원', grade: '고1', school: '휘문고등학교' },
+  { id: '9', name: '임도현', grade: '중3', school: '대치중학교' },
+  { id: '10', name: '한지우', grade: '고3', school: '강남고등학교' },
+  { id: '11', name: '송예은', grade: '중1', school: '청담중학교' },
+  { id: '12', name: '오준서', grade: '고2', school: '서울고등학교' },
+  { id: '13', name: '신지아', grade: '중2', school: '압구정중학교' },
+  { id: '14', name: '허현우', grade: '고1', school: '대원고등학교' },
+  { id: '15', name: '남수아', grade: '중3', school: '서울중학교' },
+]
+
+// Mock student data for class
+const mockStudentsInClass = {
+  '1': [ // 수학 특강반
+    { id: 's1', name: '김민준', grade: '고3', school: '대치고등학교' },
+    { id: 's2', name: '이서연', grade: '고3', school: '대치고등학교' },
+    { id: 's3', name: '박준호', grade: '고2', school: '강남고등학교' },
+  ],
+  '2': [ // 영어 회화반
+    { id: 's4', name: '최지우', grade: '중3', school: '목동중학교' },
+    { id: 's5', name: '정하은', grade: '중3', school: '목동중학교' },
+  ],
+}
 
 // Mock data for development
 const mockClasses: Class[] = [
@@ -89,6 +120,16 @@ export default function ClassesPage() {
   const [editingClass, setEditingClass] = useState<Class | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Student list dialog state
+  const [isStudentListOpen, setIsStudentListOpen] = useState(false)
+  const [selectedClass, setSelectedClass] = useState<Class | null>(null)
+
+  // Student assignment dialog state
+  const [isAssignStudentDialogOpen, setIsAssignStudentDialogOpen] = useState(false)
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([])
+  const [studentSearchQuery, setStudentSearchQuery] = useState('')
+  const [classForAssignment, setClassForAssignment] = useState<Class | null>(null)
+
   const {
     register,
     handleSubmit,
@@ -106,6 +147,17 @@ export default function ClassesPage() {
     {
       accessorKey: 'name',
       header: '반 이름',
+      cell: ({ row }) => {
+        const classData = row.original
+        return (
+          <button
+            className="text-primary hover:underline font-medium"
+            onClick={() => handleViewStudents(classData)}
+          >
+            {classData.name}
+          </button>
+        )
+      },
     },
     {
       accessorKey: 'subject',
@@ -175,6 +227,23 @@ export default function ClassesPage() {
       },
     },
     {
+      id: 'assign',
+      header: '학생 배정',
+      cell: ({ row }) => {
+        const classData = row.original
+        return (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleOpenAssignStudentDialog(classData)}
+          >
+            <Users className="mr-1 h-4 w-4" />
+            배정
+          </Button>
+        )
+      },
+    },
+    {
       id: 'actions',
       cell: ({ row }) => {
         const classData = row.original
@@ -186,10 +255,6 @@ export default function ClassesPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => alert('학생 배정 기능 (구현 예정)')}>
-                <Users className="mr-2 h-4 w-4" />
-                학생 배정
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleEdit(classData)}>
                 <Pencil className="mr-2 h-4 w-4" />
                 수정
@@ -211,6 +276,49 @@ export default function ClassesPage() {
       status: 'active',
     })
     setIsDialogOpen(true)
+  }
+
+  const handleViewStudents = (classData: Class) => {
+    setSelectedClass(classData)
+    setIsStudentListOpen(true)
+  }
+
+  const handleOpenAssignStudentDialog = (classData: Class) => {
+    setClassForAssignment(classData)
+    setSelectedStudents([]) // Reset selection
+    setStudentSearchQuery('') // Reset search
+    setIsAssignStudentDialogOpen(true)
+  }
+
+  // Filter students based on search query
+  const filteredStudents = mockStudents.filter((student) => {
+    const searchLower = studentSearchQuery.toLowerCase()
+    return (
+      student.name.toLowerCase().includes(searchLower) ||
+      student.grade.toLowerCase().includes(searchLower) ||
+      student.school.toLowerCase().includes(searchLower)
+    )
+  })
+
+  const handleToggleStudent = (studentId: string) => {
+    setSelectedStudents((prev) =>
+      prev.includes(studentId)
+        ? prev.filter((id) => id !== studentId)
+        : [...prev, studentId]
+    )
+  }
+
+  const handleSaveStudentAssignment = () => {
+    if (!classForAssignment) return
+
+    toast({
+      title: '학생 배정 완료',
+      description: `${classForAssignment.name}에 ${selectedStudents.length}명의 학생이 배정되었습니다.`,
+    })
+
+    setIsAssignStudentDialogOpen(false)
+    setClassForAssignment(null)
+    setSelectedStudents([])
   }
 
   const handleEdit = (classData: Class) => {
@@ -287,7 +395,6 @@ export default function ClassesPage() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <PagePermissions pageId="classes" />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">반 관리</h1>
@@ -429,6 +536,149 @@ export default function ClassesPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Student List Dialog */}
+      <Dialog open={isStudentListOpen} onOpenChange={setIsStudentListOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{selectedClass?.name} - 학생 목록</DialogTitle>
+            <DialogDescription>
+              등록된 학생: {mockStudentsInClass[selectedClass?.id as keyof typeof mockStudentsInClass]?.length || 0}명 / {selectedClass?.capacity}명
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {selectedClass && mockStudentsInClass[selectedClass.id as keyof typeof mockStudentsInClass] ? (
+              <div className="rounded-md border">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="p-3 text-left text-sm font-medium">이름</th>
+                      <th className="p-3 text-left text-sm font-medium">학년</th>
+                      <th className="p-3 text-left text-sm font-medium">학교</th>
+                      <th className="p-3 text-right text-sm font-medium">작업</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mockStudentsInClass[selectedClass.id as keyof typeof mockStudentsInClass].map((student) => (
+                      <tr key={student.id} className="border-b last:border-0">
+                        <td className="p-3 text-sm font-medium">{student.name}</td>
+                        <td className="p-3 text-sm">{student.grade}</td>
+                        <td className="p-3 text-sm text-muted-foreground">{student.school}</td>
+                        <td className="p-3 text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              toast({
+                                title: '학생 제외',
+                                description: '학생 제외 기능은 구현 예정입니다.',
+                              })
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">등록된 학생이 없습니다.</p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsStudentListOpen(false)}>
+              닫기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Student Assignment Dialog */}
+      <Dialog open={isAssignStudentDialogOpen} onOpenChange={setIsAssignStudentDialogOpen}>
+        <DialogContent className="max-w-2xl w-[95vw] sm:w-full">
+          <DialogHeader>
+            <DialogTitle>학생 배정</DialogTitle>
+            <DialogDescription>
+              {classForAssignment?.name}에 배정할 학생을 선택하세요
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="학생 이름, 학년, 학교로 검색..."
+              value={studentSearchQuery}
+              onChange={(e) => setStudentSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          <div className="py-4 max-h-[400px] overflow-y-auto">
+            <div className="space-y-3">
+              {filteredStudents.length > 0 ? (
+                filteredStudents.map((student) => (
+                  <div
+                    key={student.id}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 flex-1 cursor-pointer" onClick={() => handleToggleStudent(student.id)}>
+                      <input
+                        type="checkbox"
+                        checked={selectedStudents.includes(student.id)}
+                        onChange={(e) => {
+                          e.stopPropagation()
+                          handleToggleStudent(student.id)
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-4 w-4 rounded accent-primary cursor-pointer"
+                      />
+                      <div>
+                        <p className="font-medium">{student.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {student.grade} - {student.school}
+                        </p>
+                      </div>
+                    </div>
+                    {selectedStudents.includes(student.id) && (
+                      <Badge variant="default" className="ml-2">선택됨</Badge>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  검색 결과가 없습니다
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between border-t pt-4">
+            <p className="text-sm text-muted-foreground">
+              {selectedStudents.length > 0 ? (
+                <>
+                  <strong>{selectedStudents.length}명</strong> 선택됨
+                </>
+              ) : (
+                '학생을 선택해주세요'
+              )}
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAssignStudentDialogOpen(false)}>
+              취소
+            </Button>
+            <Button onClick={handleSaveStudentAssignment}>
+              배정 완료 ({selectedStudents.length}명)
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

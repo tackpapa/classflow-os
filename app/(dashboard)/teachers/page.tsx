@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { ColumnDef } from '@tanstack/react-table'
 import { usePageAccess } from '@/hooks/use-page-access'
-import { PagePermissions } from '@/components/page-permissions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { DataTable } from '@/components/ui/data-table'
@@ -41,6 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { TeacherDetailModal } from '@/components/teachers/TeacherDetailModal'
 
 // Generate unique token for lesson notes
 const generateToken = () => {
@@ -142,11 +142,58 @@ const mockTeachers: Teacher[] = [
   },
 ]
 
-// Mock students for student assignment
+// Mock students for student assignment - 50 students for scrolling
 const mockStudents = [
   { id: '1', name: '김민준', grade: '고1', school: '강남고등학교' },
   { id: '2', name: '이서연', grade: '고2', school: '서울고등학교' },
   { id: '3', name: '박지훈', grade: '중3', school: '서울중학교' },
+  { id: '4', name: '최유진', grade: '고3', school: '강남고등학교' },
+  { id: '5', name: '정서준', grade: '중1', school: '대치중학교' },
+  { id: '6', name: '강하늘', grade: '고2', school: '대원고등학교' },
+  { id: '7', name: '조민서', grade: '중2', school: '서울중학교' },
+  { id: '8', name: '윤채원', grade: '고1', school: '휘문고등학교' },
+  { id: '9', name: '임도현', grade: '중3', school: '대치중학교' },
+  { id: '10', name: '한지우', grade: '고3', school: '강남고등학교' },
+  { id: '11', name: '송예은', grade: '중1', school: '청담중학교' },
+  { id: '12', name: '오준서', grade: '고2', school: '서울고등학교' },
+  { id: '13', name: '신지아', grade: '중2', school: '압구정중학교' },
+  { id: '14', name: '허현우', grade: '고1', school: '대원고등학교' },
+  { id: '15', name: '남수아', grade: '중3', school: '서울중학교' },
+  { id: '16', name: '구민재', grade: '고3', school: '휘문고등학교' },
+  { id: '17', name: '배시연', grade: '중1', school: '대치중학교' },
+  { id: '18', name: '황지훈', grade: '고2', school: '강남고등학교' },
+  { id: '19', name: '석채린', grade: '중2', school: '청담중학교' },
+  { id: '20', name: '노태양', grade: '고1', school: '서울고등학교' },
+  { id: '21', name: '문소율', grade: '중3', school: '압구정중학교' },
+  { id: '22', name: '탁준영', grade: '고3', school: '대원고등학교' },
+  { id: '23', name: '차은우', grade: '중1', school: '서울중학교' },
+  { id: '24', name: '진하준', grade: '고2', school: '휘문고등학교' },
+  { id: '25', name: '홍다은', grade: '중2', school: '대치중학교' },
+  { id: '26', name: '류시우', grade: '고1', school: '청담고등학교' },
+  { id: '27', name: '전나연', grade: '중3', school: '압구정중학교' },
+  { id: '28', name: '도영호', grade: '고3', school: '강남고등학교' },
+  { id: '29', name: '곽민지', grade: '중1', school: '서울중학교' },
+  { id: '30', name: '변준혁', grade: '고2', school: '대원고등학교' },
+  { id: '31', name: '설아린', grade: '중2', school: '청담중학교' },
+  { id: '32', name: '추윤서', grade: '고1', school: '휘문고등학교' },
+  { id: '33', name: '엄재윤', grade: '중3', school: '대치중학교' },
+  { id: '34', name: '사유빈', grade: '고3', school: '서울고등학교' },
+  { id: '35', name: '빈서현', grade: '중1', school: '압구정중학교' },
+  { id: '36', name: '길하윤', grade: '고2', school: '강남고등학교' },
+  { id: '37', name: '지유진', grade: '중2', school: '서울중학교' },
+  { id: '38', name: '팽도훈', grade: '고1', school: '대원고등학교' },
+  { id: '39', name: '선지민', grade: '중3', school: '청담중학교' },
+  { id: '40', name: '표서아', grade: '고3', school: '휘문고등학교' },
+  { id: '41', name: '명준우', grade: '중1', school: '대치중학교' },
+  { id: '42', name: '단채윤', grade: '고2', school: '압구정고등학교' },
+  { id: '43', name: '복시현', grade: '중2', school: '서울중학교' },
+  { id: '44', name: '여지환', grade: '고1', school: '강남고등학교' },
+  { id: '45', name: '경수민', grade: '중3', school: '대원중학교' },
+  { id: '46', name: '옹하은', grade: '고3', school: '청담고등학교' },
+  { id: '47', name: '제민준', grade: '중1', school: '휘문중학교' },
+  { id: '48', name: '방예진', grade: '고2', school: '서울고등학교' },
+  { id: '49', name: '공서진', grade: '중2', school: '대치중학교' },
+  { id: '50', name: '감도윤', grade: '고1', school: '압구정고등학교' },
 ]
 
 const mockTeacherClasses: Record<string, TeacherClass[]> = {
@@ -220,6 +267,8 @@ export default function TeachersPage() {
   const [selectedStudents, setSelectedStudents] = useState<string[]>([])
   const [studentSearchQuery, setStudentSearchQuery] = useState('')
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
+  const [isTeacherDetailModalOpen, setIsTeacherDetailModalOpen] = useState(false)
+  const [selectedTeacherForDetail, setSelectedTeacherForDetail] = useState<Teacher | null>(null)
 
   // Form state
   const [formData, setFormData] = useState<Partial<Teacher>>({
@@ -275,25 +324,6 @@ export default function TeachersPage() {
       })
       setIsDeleteDialogOpen(false)
       setSelectedTeacher(null)
-    }
-  }
-
-  const handleCopyLink = async (token: string) => {
-    const link = `${window.location.origin}/lesson-note/${token}`
-    try {
-      await navigator.clipboard.writeText(link)
-      setCopiedToken(token)
-      toast({
-        title: '링크 복사 완료',
-        description: '수업일지 등록 링크가 클립보드에 복사되었습니다.',
-      })
-      setTimeout(() => setCopiedToken(null), 2000)
-    } catch (err) {
-      toast({
-        title: '복사 실패',
-        description: '링크 복사에 실패했습니다.',
-        variant: 'destructive',
-      })
     }
   }
 
@@ -410,6 +440,11 @@ export default function TeachersPage() {
     setSelectedTeacher(null)
   }
 
+  const handleOpenTeacherDetail = (teacher: Teacher) => {
+    setSelectedTeacherForDetail(teacher)
+    setIsTeacherDetailModalOpen(true)
+  }
+
   // Teacher list columns
   const teacherColumns: ColumnDef<Teacher>[] = [
     {
@@ -422,12 +457,17 @@ export default function TeachersPage() {
           .slice(0, 2)
           .join('')
         return (
-          <div className="flex items-center gap-3">
+          <button
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            onClick={() => handleOpenTeacherDetail(teacher)}
+          >
             <Avatar>
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
-            <span className="font-medium">{teacher.name}</span>
-          </div>
+            <span className="font-medium text-blue-600 hover:text-blue-800 hover:underline">
+              {teacher.name}
+            </span>
+          </button>
         )
       },
     },
@@ -487,35 +527,6 @@ export default function TeachersPage() {
             <span className="text-xs">
               {assignedCount > 0 ? `${assignedCount}명 배정됨` : '배정하기'}
             </span>
-          </Button>
-        )
-      },
-    },
-    {
-      id: 'lesson_note_link',
-      header: '수업일지 링크',
-      cell: ({ row }) => {
-        const teacher = row.original
-        if (!teacher.lesson_note_token) return <span className="text-muted-foreground text-sm">-</span>
-        const isCopied = copiedToken === teacher.lesson_note_token
-        return (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleCopyLink(teacher.lesson_note_token!)}
-            className="gap-2"
-          >
-            {isCopied ? (
-              <>
-                <CheckCircle2 className="h-3 w-3 text-green-600" />
-                <span className="text-xs">복사됨</span>
-              </>
-            ) : (
-              <>
-                <Copy className="h-3 w-3" />
-                <span className="text-xs">링크 복사</span>
-              </>
-            )}
           </Button>
         )
       },
@@ -601,7 +612,6 @@ export default function TeachersPage() {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PagePermissions pageId="teachers" />
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -1076,15 +1086,18 @@ export default function TeachersPage() {
                 filteredStudents.map((student) => (
                   <div
                     key={student.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => handleToggleStudent(student.id)}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-1 cursor-pointer" onClick={() => handleToggleStudent(student.id)}>
                       <input
                         type="checkbox"
                         checked={selectedStudents.includes(student.id)}
-                        onChange={() => handleToggleStudent(student.id)}
-                        className="h-4 w-4 rounded accent-primary"
+                        onChange={(e) => {
+                          e.stopPropagation()
+                          handleToggleStudent(student.id)
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-4 w-4 rounded accent-primary cursor-pointer"
                       />
                       <div>
                         <p className="font-medium">{student.name}</p>
@@ -1129,7 +1142,21 @@ export default function TeachersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Teacher Detail Dialog */}
+      {/* Teacher Detail Modal */}
+      <TeacherDetailModal
+        teacher={selectedTeacherForDetail}
+        open={isTeacherDetailModalOpen}
+        onOpenChange={setIsTeacherDetailModalOpen}
+        onUpdate={(updatedTeacher) => {
+          setTeachers(teachers.map(t => t.id === updatedTeacher.id ? updatedTeacher : t))
+          toast({
+            title: '강사 정보 업데이트',
+            description: `${updatedTeacher.name} 강사의 정보가 업데이트되었습니다.`,
+          })
+        }}
+      />
+
+      {/* Teacher Detail Dialog (Old - can be removed later) */}
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
           <DialogHeader>

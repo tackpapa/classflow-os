@@ -1,9 +1,16 @@
 'use client'
 
+/**
+ * 시험 관리 페이지 (Exams Management) - 강사용
+ *
+ * TODO: 강사 계정 필터링 구현 필요
+ * - 현재: 모든 시험 데이터 표시 (개발용)
+ * - 향후: 로그인한 강사 본인이 담당하는 학생의 시험만 필터링
+ */
+
 import { useState } from 'react'
 import { ColumnDef } from '@tanstack/react-table'
 import { usePageAccess } from '@/hooks/use-page-access'
-import { PagePermissions } from '@/components/page-permissions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { DataTable } from '@/components/ui/data-table'
@@ -24,6 +31,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { Exam, ExamScore } from '@/lib/types/database'
 import { format } from 'date-fns'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
@@ -97,6 +113,15 @@ export default function ExamsPage() {
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null)
   const [isScoresDialogOpen, setIsScoresDialogOpen] = useState(false)
   const [isStatsDialogOpen, setIsStatsDialogOpen] = useState(false)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [examForm, setExamForm] = useState({
+    name: '',
+    subject: '',
+    class_name: '',
+    exam_date: '',
+    exam_time: '',
+    total_score: 100,
+  })
 
   const statusMap = {
     scheduled: { label: '예정', variant: 'secondary' as const },
@@ -108,6 +133,17 @@ export default function ExamsPage() {
     {
       accessorKey: 'name',
       header: '시험명',
+      cell: ({ row }) => {
+        const exam = row.original
+        return (
+          <button
+            className="text-primary hover:underline font-medium"
+            onClick={() => handleViewScores(exam)}
+          >
+            {exam.name}
+          </button>
+        )
+      },
     },
     {
       accessorKey: 'subject',
@@ -128,14 +164,6 @@ export default function ExamsPage() {
         const date = row.getValue('exam_date') as string
         const time = row.original.exam_time
         return `${format(new Date(date), 'yyyy-MM-dd')} ${time}`
-      },
-    },
-    {
-      accessorKey: 'total_score',
-      header: '만점',
-      cell: ({ row }) => {
-        const score = row.getValue('total_score') as number
-        return `${score}점`
       },
     },
     {
@@ -201,6 +229,51 @@ export default function ExamsPage() {
     })
   }
 
+  const handleCreateExam = () => {
+    setExamForm({
+      name: '',
+      subject: '',
+      class_name: '',
+      exam_date: '',
+      exam_time: '',
+      total_score: 100,
+    })
+    setIsCreateDialogOpen(true)
+  }
+
+  const handleSaveExam = () => {
+    if (!examForm.name || !examForm.subject || !examForm.class_name || !examForm.exam_date || !examForm.exam_time) {
+      toast({
+        title: '입력 오류',
+        description: '모든 필수 항목을 입력해주세요.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const newExam: Exam = {
+      id: `exam-${Date.now()}`,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      org_id: 'org-1',
+      name: examForm.name,
+      subject: examForm.subject,
+      class_id: 'class-new',
+      class_name: examForm.class_name,
+      exam_date: examForm.exam_date,
+      exam_time: examForm.exam_time,
+      total_score: examForm.total_score,
+      status: 'scheduled',
+    }
+
+    setExams([...exams, newExam])
+    toast({
+      title: '시험 등록 완료',
+      description: `${examForm.name} 시험이 등록되었습니다.`,
+    })
+    setIsCreateDialogOpen(false)
+  }
+
   const getExamStats = (examId: string) => {
     const scores = mockScores[examId] || []
     if (scores.length === 0) return null
@@ -226,13 +299,12 @@ export default function ExamsPage() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <PagePermissions pageId="exams" />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">시험 관리</h1>
           <p className="text-sm md:text-base text-muted-foreground">시험 및 성적을 관리하세요</p>
         </div>
-        <Button onClick={() => toast({ title: '시험 등록', description: '구현 예정' })} className="w-full sm:w-auto">
+        <Button onClick={handleCreateExam} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           시험 등록
         </Button>
@@ -294,6 +366,89 @@ export default function ExamsPage() {
           />
         </CardContent>
       </Card>
+
+      {/* Exam Creation Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>시험 등록</DialogTitle>
+            <DialogDescription>새로운 시험을 등록하세요</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">시험명 *</Label>
+              <Input
+                id="name"
+                value={examForm.name}
+                onChange={(e) => setExamForm({ ...examForm, name: e.target.value })}
+                placeholder="예: 수학 중간고사"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="subject">과목 *</Label>
+              <Input
+                id="subject"
+                value={examForm.subject}
+                onChange={(e) => setExamForm({ ...examForm, subject: e.target.value })}
+                placeholder="예: 수학"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="class_name">반 이름 *</Label>
+              <Input
+                id="class_name"
+                value={examForm.class_name}
+                onChange={(e) => setExamForm({ ...examForm, class_name: e.target.value })}
+                placeholder="예: 수학 특강반"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="exam_date">시험일 *</Label>
+                <Input
+                  id="exam_date"
+                  type="date"
+                  value={examForm.exam_date}
+                  onChange={(e) => setExamForm({ ...examForm, exam_date: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="exam_time">시험 시간 *</Label>
+                <Input
+                  id="exam_time"
+                  type="time"
+                  value={examForm.exam_time}
+                  onChange={(e) => setExamForm({ ...examForm, exam_time: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="total_score">만점</Label>
+              <Input
+                id="total_score"
+                type="number"
+                value={examForm.total_score}
+                onChange={(e) => setExamForm({ ...examForm, total_score: parseInt(e.target.value) || 100 })}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              취소
+            </Button>
+            <Button onClick={handleSaveExam}>
+              등록
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Scores Dialog */}
       <Dialog open={isScoresDialogOpen} onOpenChange={setIsScoresDialogOpen}>

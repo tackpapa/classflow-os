@@ -1,0 +1,359 @@
+import { Widget } from '@/lib/types/widget'
+
+// 사용 가능한 모든 위젯 정의
+export const availableWidgets: Widget[] = [
+  // 실시간 현황
+  {
+    id: 'realtime-status',
+    type: 'realtime-status',
+    title: '실시간 현황',
+    description: '독서실, 수업 출결, 진행 중인 수업',
+    category: '실시간',
+    size: 'full',
+    enabled: true,
+    order: 0,
+  },
+
+  // 학생 관리
+  {
+    id: 'students-total',
+    type: 'students-total',
+    title: '전체 학생',
+    description: '재학생/휴학생 통계',
+    category: '학생관리',
+    size: 'small',
+    enabled: true,
+    order: 1,
+  },
+  {
+    id: 'students-grade-distribution',
+    type: 'students-grade-distribution',
+    title: '학년별 분포',
+    description: '학년별 학생 수 차트',
+    category: '학생관리',
+    size: 'medium',
+    enabled: false,
+    order: 100,
+  },
+
+  // 상담 관리
+  {
+    id: 'consultations-summary',
+    type: 'consultations-summary',
+    title: '상담 현황',
+    description: '신규/예정/입교 상담 통계',
+    category: '상담관리',
+    size: 'small',
+    enabled: true,
+    order: 2,
+  },
+  {
+    id: 'consultations-upcoming',
+    type: 'consultations-upcoming',
+    title: '예정된 상담',
+    description: '오늘/내일 상담 일정',
+    category: '상담관리',
+    size: 'medium',
+    enabled: false,
+    order: 101,
+  },
+  {
+    id: 'consultations-conversion',
+    type: 'consultations-conversion',
+    title: '입교 전환율',
+    description: '상담→입교 전환율 차트',
+    category: '상담관리',
+    size: 'medium',
+    enabled: false,
+    order: 102,
+  },
+
+  // 수업 관리
+  {
+    id: 'classes-summary',
+    type: 'classes-summary',
+    title: '반 운영 현황',
+    description: '총 반/평균 충원율',
+    category: '수업관리',
+    size: 'small',
+    enabled: false,
+    order: 103,
+  },
+  {
+    id: 'classes-capacity',
+    type: 'classes-capacity',
+    title: '반별 충원율',
+    description: '반별 충원율 차트',
+    category: '수업관리',
+    size: 'medium',
+    enabled: false,
+    order: 104,
+  },
+
+  // 시험 관리
+  {
+    id: 'exams-summary',
+    type: 'exams-summary',
+    title: '시험 현황',
+    description: '채점 완료/대기 통계',
+    category: '수업관리',
+    size: 'small',
+    enabled: false,
+    order: 105,
+  },
+  {
+    id: 'exams-recent',
+    type: 'exams-recent',
+    title: '최근 시험 결과',
+    description: '평균 성적 및 추이',
+    category: '수업관리',
+    size: 'medium',
+    enabled: false,
+    order: 106,
+  },
+
+  // 과제 관리
+  {
+    id: 'homework-summary',
+    type: 'homework-summary',
+    title: '과제 현황',
+    description: '진행 중/완료 과제',
+    category: '수업관리',
+    size: 'small',
+    enabled: false,
+    order: 107,
+  },
+  {
+    id: 'homework-submission',
+    type: 'homework-submission',
+    title: '과제 제출률',
+    description: '학생별 제출률 차트',
+    category: '수업관리',
+    size: 'medium',
+    enabled: false,
+    order: 108,
+  },
+
+  // 재무 관리
+  {
+    id: 'billing-summary',
+    type: 'billing-summary',
+    title: '재무 현황',
+    description: '수익/지출/순이익',
+    category: '재무관리',
+    size: 'small',
+    enabled: true,
+    order: 3,
+  },
+  {
+    id: 'billing-revenue-trend',
+    type: 'billing-revenue-trend',
+    title: '월별 매출',
+    description: '최근 6개월 매출 추이',
+    category: '재무관리',
+    size: 'medium',
+    enabled: true,
+    order: 4,
+  },
+  {
+    id: 'billing-expense-category',
+    type: 'billing-expense-category',
+    title: '지출 카테고리',
+    description: '카테고리별 지출 분포',
+    category: '재무관리',
+    size: 'medium',
+    enabled: false,
+    order: 109,
+  },
+
+  // 출결 관리
+  {
+    id: 'attendance-today',
+    type: 'attendance-today',
+    title: '오늘 출결',
+    description: '출석/지각/결석',
+    category: '출결관리',
+    size: 'small',
+    enabled: false,
+    order: 110,
+  },
+  {
+    id: 'attendance-weekly',
+    type: 'attendance-weekly',
+    title: '주간 출결률',
+    description: '요일별 출결 추이',
+    category: '출결관리',
+    size: 'medium',
+    enabled: true,
+    order: 5,
+  },
+  {
+    id: 'attendance-alerts',
+    type: 'attendance-alerts',
+    title: '출결 경고',
+    description: '연속 결석/출결률 낮은 학생',
+    category: '출결관리',
+    size: 'medium',
+    enabled: false,
+    order: 111,
+  },
+
+  // 수업일지
+  {
+    id: 'lessons-summary',
+    type: 'lessons-summary',
+    title: '수업일지 현황',
+    description: '이번 달 수업 통계',
+    category: '수업관리',
+    size: 'small',
+    enabled: false,
+    order: 112,
+  },
+  {
+    id: 'lessons-recent',
+    type: 'lessons-recent',
+    title: '최근 수업일지',
+    description: '최근 작성된 수업일지',
+    category: '수업관리',
+    size: 'medium',
+    enabled: false,
+    order: 113,
+  },
+
+  // 강사 관리
+  {
+    id: 'teachers-summary',
+    type: 'teachers-summary',
+    title: '강사 현황',
+    description: '재직 강사/담당 학생',
+    category: '수업관리',
+    size: 'small',
+    enabled: false,
+    order: 114,
+  },
+
+  // 스케줄
+  {
+    id: 'schedule-today',
+    type: 'schedule-today',
+    title: '오늘 수업 일정',
+    description: '오늘 예정된 수업',
+    category: '수업관리',
+    size: 'medium',
+    enabled: false,
+    order: 115,
+  },
+
+  // 시설 관리
+  {
+    id: 'rooms-usage',
+    type: 'rooms-usage',
+    title: '강의실 사용률',
+    description: '강의실별 사용 현황',
+    category: '시설관리',
+    size: 'medium',
+    enabled: false,
+    order: 116,
+  },
+  {
+    id: 'seats-realtime',
+    type: 'seats-realtime',
+    title: '독서실 좌석',
+    description: '실시간 좌석 현황',
+    category: '시설관리',
+    size: 'small',
+    enabled: false,
+    order: 117,
+  },
+
+  // 지출 관리
+  {
+    id: 'expenses-summary',
+    type: 'expenses-summary',
+    title: '지출 현황',
+    description: '이번 달 총 지출',
+    category: '재무관리',
+    size: 'small',
+    enabled: false,
+    order: 118,
+  },
+  {
+    id: 'expenses-trend',
+    type: 'expenses-trend',
+    title: '지출 추이',
+    description: '월별 지출 변화',
+    category: '재무관리',
+    size: 'medium',
+    enabled: false,
+    order: 119,
+  },
+
+  // 기타
+  {
+    id: 'recent-activities',
+    type: 'recent-activities',
+    title: '최근 활동',
+    description: '최근 7일간의 주요 활동',
+    category: '기타',
+    size: 'medium',
+    enabled: true,
+    order: 6,
+  },
+  {
+    id: 'announcements',
+    type: 'announcements',
+    title: '공지사항',
+    description: '중요한 공지사항',
+    category: '기타',
+    size: 'medium',
+    enabled: true,
+    order: 7,
+  },
+]
+
+// 기본 활성화 위젯 ID
+export const defaultEnabledWidgetIds = availableWidgets
+  .filter((w) => w.enabled)
+  .map((w) => w.id)
+
+// LocalStorage 키
+export const WIDGETS_STORAGE_KEY = 'dashboard-widgets-config'
+
+// 위젯 설정 가져오기
+export function getWidgetsConfig(): Widget[] {
+  if (typeof window === 'undefined') return availableWidgets
+
+  try {
+    const stored = localStorage.getItem(WIDGETS_STORAGE_KEY)
+    if (!stored) return availableWidgets
+
+    const config = JSON.parse(stored) as Widget[]
+
+    // 새로운 위젯이 추가되었을 경우 병합
+    const configIds = new Set(config.map((w) => w.id))
+    const newWidgets = availableWidgets.filter((w) => !configIds.has(w.id))
+
+    return [...config, ...newWidgets].sort((a, b) => a.order - b.order)
+  } catch (error) {
+    console.error('Failed to load widgets config:', error)
+    return availableWidgets
+  }
+}
+
+// 위젯 설정 저장
+export function saveWidgetsConfig(widgets: Widget[]) {
+  if (typeof window === 'undefined') return
+
+  try {
+    localStorage.setItem(WIDGETS_STORAGE_KEY, JSON.stringify(widgets))
+  } catch (error) {
+    console.error('Failed to save widgets config:', error)
+  }
+}
+
+// 활성화된 위젯만 가져오기
+export function getEnabledWidgets(): Widget[] {
+  return getWidgetsConfig()
+    .filter((w) => w.enabled)
+    .sort((a, b) => a.order - b.order)
+}

@@ -70,12 +70,17 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // 인증이 필요한 경로 (route group으로 인해 URL에서 (dashboard)는 제거됨)
+  // 인증이 필요한 경로 - [institutionname] 동적 라우팅 지원
+  // 패턴: /[institutionname]/(dashboard)/* 형태의 경로 체크
   const protectedPaths = ['/overview', '/students', '/classes', '/consultations',
-                          '/exams', '/homework', '/billing', '/settings', '/my']
-  const isProtectedPath = protectedPaths.some(path =>
-    request.nextUrl.pathname.startsWith(path)
-  )
+                          '/exams', '/homework', '/billing', '/settings', '/my',
+                          '/attendance', '/lessons', '/teachers', '/schedule', '/rooms',
+                          '/seats', '/all-schedules', '/expenses']
+
+  // URL 패턴: /[institutionname]/[page] 형태 체크
+  const pathSegments = request.nextUrl.pathname.split('/').filter(Boolean)
+  const isProtectedPath = pathSegments.length >= 2 &&
+    protectedPaths.some(path => request.nextUrl.pathname.includes(path))
 
   if (isProtectedPath) {
     if (!user) {
@@ -87,7 +92,7 @@ export async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/login') ||
       request.nextUrl.pathname.startsWith('/signup')) {
     if (user) {
-      return NextResponse.redirect(new URL('/overview', request.url))
+      return NextResponse.redirect(new URL('/classflow/overview', request.url))
     }
   }
 

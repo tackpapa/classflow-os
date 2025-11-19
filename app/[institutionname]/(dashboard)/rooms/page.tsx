@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { usePageAccess } from '@/hooks/use-page-access'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { getInstitutionHref } from '@/lib/utils/route'
 import Link from 'next/link'
 import { Grid3x3 } from 'lucide-react'
 import {
@@ -542,7 +543,7 @@ export default function RoomsPage() {
             교실별 스케줄을 확인하고 관리합니다
           </p>
         </div>
-        <Link href="/all-schedules">
+        <Link href={getInstitutionHref('/all-schedules')}>
           <Button variant="outline" className="w-full sm:w-auto">
             <Grid3x3 className="mr-2 h-4 w-4" />
             전체 스케줄 보기

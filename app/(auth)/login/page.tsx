@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast'
 import { Loader2, Crown, GraduationCap, UserCog, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getInstitutionHref } from '@/lib/utils/route'
 import { accountManager } from '@/lib/utils/permissions'
 
 const loginSchema = z.object({
@@ -86,7 +87,7 @@ export default function LoginPage() {
           description: `${defaultAccount.label}으로 로그인되었습니다.`,
         })
 
-        router.push('/overview')
+        router.push(getInstitutionHref('/overview'))
         router.refresh()
         return
       }

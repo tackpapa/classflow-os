@@ -28,6 +28,23 @@ export interface NavigationItem {
   badges: BadgeType[]
 }
 
+// Default institution name
+const DEFAULT_INSTITUTION = 'classflow'
+
+// Helper function to get institution name from URL or use default
+export function getInstitutionName(): string {
+  if (typeof window === 'undefined') return DEFAULT_INSTITUTION
+
+  const pathSegments = window.location.pathname.split('/').filter(Boolean)
+  // Check if first segment looks like an institution name (not a known route)
+  const knownRoutes = ['login', 'signup', 'consultation', 'lesson-note', 'my']
+  if (pathSegments.length > 0 && !knownRoutes.includes(pathSegments[0])) {
+    return pathSegments[0]
+  }
+
+  return DEFAULT_INSTITUTION
+}
+
 export const navigationItems: NavigationItem[] = [
   {
     id: 'overview',
@@ -188,10 +205,11 @@ export function setMenuOrder(order: string[]): void {
   localStorage.setItem('menuOrder', JSON.stringify(order))
 }
 
-// Helper function to get filtered navigation items
-export function getFilteredNavigation(): NavigationItem[] {
+// Helper function to get filtered navigation items with institution prefix
+export function getFilteredNavigation(institutionName?: string): NavigationItem[] {
   const enabledIds = getEnabledMenuIds()
   const menuOrder = getMenuOrder()
+  const institution = institutionName || getInstitutionName()
 
   // Sort by custom order
   const orderedItems = menuOrder
@@ -203,5 +221,11 @@ export function getFilteredNavigation(): NavigationItem[] {
   const newItems = navigationItems.filter(item => !orderedIds.has(item.id))
 
   const allItems = [...orderedItems, ...newItems]
-  return allItems.filter(item => enabledIds.includes(item.id))
+  const filteredItems = allItems.filter(item => enabledIds.includes(item.id))
+
+  // Add institution prefix to hrefs
+  return filteredItems.map(item => ({
+    ...item,
+    href: `/${institution}${item.href}`
+  }))
 }

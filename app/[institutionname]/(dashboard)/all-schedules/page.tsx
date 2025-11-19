@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select'
 import type { Room, RoomSchedule } from '@/lib/types/database'
 import { cn } from '@/lib/utils'
+import { getInstitutionHref } from '@/lib/utils/route'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
@@ -634,7 +635,7 @@ export default function AllSchedulesPage() {
             모든 교실의 수업 스케줄을 한눈에 확인합니다
           </p>
         </div>
-        <Link href="/rooms" className="w-full sm:w-auto">
+        <Link href={getInstitutionHref('/rooms')} className="w-full sm:w-auto">
           <Button variant="outline" className="w-full sm:w-auto">
             <BookOpen className="mr-2 h-4 w-4" />
             스케줄 등록하기

@@ -24,6 +24,7 @@ import { CSS } from '@dnd-kit/utilities'
 import {
   navigationItems,
   getFilteredNavigation,
+  getInstitutionName,
   setMenuOrder,
   getMenuOrder,
   type BadgeType,
@@ -244,7 +245,7 @@ export function Sidebar() {
     >
       {/* Logo and Organization Name */}
       <div className="px-4 py-6 border-b">
-        <Link href="/overview" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+        <Link href={`/${getInstitutionName()}/overview`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           {organizationLogo ? (
             <img
               src={organizationLogo}

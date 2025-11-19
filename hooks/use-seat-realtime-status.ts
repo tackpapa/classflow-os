@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { SleepRecord, OutingRecord } from '@/lib/types/database'
 
@@ -15,7 +15,8 @@ export function useSeatRealtimeStatus(studentId: string | null, seatNumber: numb
     loading: true,
   })
 
-  const supabase = createClient()
+  // Memoize supabase client to prevent recreation on every render
+  const supabase = useMemo(() => createClient(), [])
   const today = new Date().toISOString().split('T')[0]
 
   useEffect(() => {
@@ -24,12 +25,49 @@ export function useSeatRealtimeStatus(studentId: string | null, seatNumber: numb
       return
     }
 
-    console.log('🔔 Subscribing to seat status for:', { studentId, seatNumber })
+    async function loadStatus() {
+      try {
+        setStatus((prev) => ({ ...prev, loading: true }))
+
+        // Load current sleep record
+        const { data: sleepData } = await supabase
+          .from('sleep_records')
+          .select('*')
+          .eq('student_id', studentId)
+          .eq('date', today)
+          .eq('status', 'sleeping')
+          .maybeSingle()
+
+        // Load current outing record
+        const { data: outingData } = await supabase
+          .from('outing_records')
+          .select('*')
+          .eq('student_id', studentId)
+          .eq('date', today)
+          .eq('status', 'out')
+          .maybeSingle()
+
+        setStatus({
+          sleepRecord: sleepData as SleepRecord | null,
+          outingRecord: outingData as OutingRecord | null,
+          loading: false,
+        })
+      } catch (error) {
+        console.error('Error loading seat status:', error)
+        setStatus((prev) => ({ ...prev, loading: false }))
+      }
+    }
+
     loadStatus()
 
     // Subscribe to sleep_records changes
     const sleepChannel = supabase
-      .channel(`seat-sleep-${seatNumber}`)
+      .channel(`seat-sleep-${seatNumber}-${studentId}`, {
+        config: {
+          broadcast: { self: true },
+          presence: { key: '' },
+        },
+      })
       .on(
         'postgres_changes',
         {
@@ -55,12 +93,17 @@ export function useSeatRealtimeStatus(studentId: string | null, seatNumber: numb
         }
       )
       .subscribe((status) => {
-        console.log('🔌 Sleep channel subscription status:', status)
+        console.log(`🔌 [Seat ${seatNumber}] Sleep channel status:`, status)
       })
 
     // Subscribe to outing_records changes
     const outingChannel = supabase
-      .channel(`seat-outing-${seatNumber}`)
+      .channel(`seat-outing-${seatNumber}-${studentId}`, {
+        config: {
+          broadcast: { self: true },
+          presence: { key: '' },
+        },
+      })
       .on(
         'postgres_changes',
         {
@@ -70,11 +113,14 @@ export function useSeatRealtimeStatus(studentId: string | null, seatNumber: numb
           filter: `student_id=eq.${studentId}`,
         },
         async (payload) => {
+          console.log('🚪 Outing record changed:', payload)
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             const record = payload.new as OutingRecord
             if (record.status === 'out' && record.date === today) {
+              console.log('🏃 Student is out:', record)
               setStatus((prev) => ({ ...prev, outingRecord: record }))
             } else if (record.status === 'returned') {
+              console.log('🏠 Student returned')
               setStatus((prev) => ({ ...prev, outingRecord: null }))
             }
           } else if (payload.eventType === 'DELETE') {
@@ -82,48 +128,15 @@ export function useSeatRealtimeStatus(studentId: string | null, seatNumber: numb
           }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log(`🔌 [Seat ${seatNumber}] Outing channel status:`, status)
+      })
 
     return () => {
       supabase.removeChannel(sleepChannel)
       supabase.removeChannel(outingChannel)
     }
-  }, [studentId, seatNumber, supabase, today])
-
-  async function loadStatus() {
-    if (!studentId) return
-
-    try {
-      setStatus((prev) => ({ ...prev, loading: true }))
-
-      // Load current sleep record
-      const { data: sleepData } = await supabase
-        .from('sleep_records')
-        .select('*')
-        .eq('student_id', studentId)
-        .eq('date', today)
-        .eq('status', 'sleeping')
-        .maybeSingle()
-
-      // Load current outing record
-      const { data: outingData } = await supabase
-        .from('outing_records')
-        .select('*')
-        .eq('student_id', studentId)
-        .eq('date', today)
-        .eq('status', 'out')
-        .maybeSingle()
-
-      setStatus({
-        sleepRecord: sleepData as SleepRecord | null,
-        outingRecord: outingData as OutingRecord | null,
-        loading: false,
-      })
-    } catch (error) {
-      console.error('Error loading seat status:', error)
-      setStatus((prev) => ({ ...prev, loading: false }))
-    }
-  }
+  }, [studentId, seatNumber, today])
 
   return status
 }

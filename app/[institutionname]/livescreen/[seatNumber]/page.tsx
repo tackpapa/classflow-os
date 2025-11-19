@@ -2,7 +2,7 @@
 
 export const runtime = 'edge'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -20,7 +20,8 @@ import {
   DoorOpen,
   Moon,
   MoonStar,
-  ArrowLeft,
+  Maximize2,
+  Unlock,
   Trophy,
   Clock,
   BarChart3,
@@ -78,6 +79,10 @@ export default function LiveScreenPage({ params }: PageProps) {
   const [activeView, setActiveView] = useState<'timer' | 'planner' | 'planner-edit' | 'ranking' | 'stats'>('timer')
   const [studyTimeMinutes, setStudyTimeMinutes] = useState(0)
   const [currentCall, setCurrentCall] = useState<CallRecord | null>(null)
+
+  // Fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [managerCallModalOpen, setManagerCallModalOpen] = useState(false)
 
   // Mock ranking data
@@ -139,6 +144,38 @@ export default function LiveScreenPage({ params }: PageProps) {
     }
   }, [studentId, seatNumber])
 
+  // Fullscreen functionality
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
+
+  const handleEnterFullscreen = async () => {
+    try {
+      if (containerRef.current && !document.fullscreenElement) {
+        await containerRef.current.requestFullscreen()
+        setIsFullscreen(true)
+      }
+    } catch (error) {
+      console.error('Failed to enter fullscreen:', error)
+    }
+  }
+
+  const handleExitFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen()
+        setIsFullscreen(false)
+      }
+    } catch (error) {
+      console.error('Failed to exit fullscreen:', error)
+    }
+  }
+
   // Sleep countdown timer
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null
@@ -167,7 +204,6 @@ export default function LiveScreenPage({ params }: PageProps) {
 
     // Initial fetch
     const fetchCurrentCall = async () => {
-      console.log('Fetching current call for:', { studentId, seatNumber, today })
       const { data, error } = await supabase
         .from('call_records')
         .select('*')
@@ -184,7 +220,6 @@ export default function LiveScreenPage({ params }: PageProps) {
         return
       }
 
-      console.log('Current call fetched:', data)
       setCurrentCall(data)
     }
 
@@ -202,7 +237,6 @@ export default function LiveScreenPage({ params }: PageProps) {
           filter: `student_id=eq.${studentId}`,
         },
         (payload) => {
-          console.log('Call record change:', payload)
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             const record = payload.new as CallRecord
             // Check if this call is for this seat and today
@@ -218,9 +252,7 @@ export default function LiveScreenPage({ params }: PageProps) {
           }
         }
       )
-      .subscribe((status) => {
-        console.log('Call subscription status:', status)
-      })
+      .subscribe()
 
     return () => {
       channel.unsubscribe()
@@ -445,7 +477,7 @@ export default function LiveScreenPage({ params }: PageProps) {
         </div>
       )}
 
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 flex flex-col">
+      <div ref={containerRef} className="min-h-screen bg-gradient-to-br from-white to-gray-50 flex flex-col">
         {/* Compact Header */}
         <div className="max-w-7xl mx-auto w-full px-3 pt-2 pb-1 flex-shrink-0">
           <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
@@ -453,14 +485,27 @@ export default function LiveScreenPage({ params }: PageProps) {
               <div className="flex items-center justify-between gap-2">
                 {/* Left: Back button + Student info */}
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => window.history.back()}
-                    className="h-7 w-7 flex-shrink-0"
-                  >
-                    <ArrowLeft className="h-3.5 w-3.5" />
-                  </Button>
+                  {!isFullscreen ? (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleEnterFullscreen}
+                      className="h-7 w-7 flex-shrink-0"
+                      title="전체화면 모드"
+                    >
+                      <Maximize2 className="h-3.5 w-3.5" />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleExitFullscreen}
+                      className="h-7 w-7 flex-shrink-0"
+                      title="전체화면 종료"
+                    >
+                      <Unlock className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                   <div className="flex items-center gap-1.5 min-w-0">
                     <Badge variant="outline" className="text-xs px-1.5 py-0.5 flex-shrink-0">
                       {seatNumber}번

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { usePageAccess } from '@/hooks/use-page-access'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -27,7 +27,7 @@ import { Users, UserCheck, UserX, Settings2, Armchair, Moon, DoorOpen, Copy, Che
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import type { Student } from '@/lib/types/database'
-import { useSeatRealtimeStatus } from '@/hooks/use-seat-realtime-status'
+import { useAllSeatsRealtime } from '@/hooks/use-all-seats-realtime'
 import { createClient } from '@/lib/supabase/client'
 
 // LiveScreen State Types
@@ -200,9 +200,18 @@ function SleepStatus({
 }) {
   const [remaining, setRemaining] = useState('')
   const [isExpiring, setIsExpiring] = useState(false)
-  const [hasNotified, setHasNotified] = useState(false)
+  const hasNotifiedRef = useRef(false)
+  const onSleepExpiredRef = useRef(onSleepExpired)
+
+  // Update ref when callback changes
+  useEffect(() => {
+    onSleepExpiredRef.current = onSleepExpired
+  }, [onSleepExpired])
 
   useEffect(() => {
+    // Reset notification flag when sleep record changes
+    hasNotifiedRef.current = false
+
     const calculateRemaining = () => {
       const now = Date.now()
       const sleepStart = new Date(sleepRecord.sleep_time).getTime()
@@ -214,10 +223,12 @@ function SleepStatus({
         setRemaining('시간 종료')
         setIsExpiring(true)
 
-        // Trigger notification only once
-        if (!hasNotified && onSleepExpired) {
-          setHasNotified(true)
-          onSleepExpired(sleepRecord.seat_number, '')
+        // Trigger notification only once AND only if student is still sleeping
+        if (!hasNotifiedRef.current &&
+            onSleepExpiredRef.current &&
+            sleepRecord.status === 'sleeping') {
+          hasNotifiedRef.current = true
+          onSleepExpiredRef.current(sleepRecord.seat_number, '')
         }
         return
       }
@@ -233,7 +244,7 @@ function SleepStatus({
     const interval = setInterval(calculateRemaining, 1000)
 
     return () => clearInterval(interval)
-  }, [sleepRecord.sleep_time, sleepRecord.seat_number, hasNotified, onSleepExpired])
+  }, [sleepRecord.sleep_time, sleepRecord.seat_number])
 
   return (
     <div className={cn(
@@ -321,17 +332,17 @@ function LiveStatusIndicator({
   studentId,
   seatNumber,
   studentName,
+  sleepRecord,
+  outingRecord,
   onSleepExpired
 }: {
   studentId: string
   seatNumber: number
   studentName: string
+  sleepRecord: SleepRecord | null
+  outingRecord: OutingRecord | null
   onSleepExpired?: (seatNumber: number, studentName: string) => void
 }) {
-  const { sleepRecord, outingRecord, loading } = useSeatRealtimeStatus(studentId, seatNumber)
-
-  if (loading) return null
-
   // Show sleep status first (higher priority)
   if (sleepRecord) {
     return (
@@ -349,6 +360,132 @@ function LiveStatusIndicator({
 
   // No active status
   return null
+}
+
+// Seat Card Component - separated to properly use hooks
+function SeatCard({
+  seat,
+  sleepRecord,
+  outingRecord,
+  getCardStyle,
+  getStatusBadge,
+  handleSeatClick,
+  handleToggleAttendance,
+  handleCallStudent,
+  handleSleepExpired,
+  mockStudents
+}: {
+  seat: any
+  sleepRecord: SleepRecord | null
+  outingRecord: OutingRecord | null
+  getCardStyle: (status: string) => string
+  getStatusBadge: (status: string) => JSX.Element
+  handleSeatClick: (seat: any) => void
+  handleToggleAttendance: (seatId: string) => void
+  handleCallStudent: (seatNumber: number, studentId: string, studentName: string) => void
+  handleSleepExpired: (seatNumber: number, studentName: string) => void
+  mockStudents: Student[]
+}) {
+  // Determine card style based on live status
+  let cardStyle = getCardStyle(seat.status)
+  if (seat.status === 'checked_in') {
+    if (sleepRecord) {
+      cardStyle = 'border-red-300 bg-red-50/50' // 잠자기 중
+    } else if (outingRecord) {
+      cardStyle = 'border-blue-300 bg-blue-50/50' // 외출 중
+    }
+  }
+
+  return (
+    <Card
+      className={cn(
+        "cursor-pointer transition-all hover:shadow-md",
+        cardStyle
+      )}
+      onClick={() => handleSeatClick(seat)}
+    >
+      <CardContent className="p-4 space-y-3">
+        {/* Seat Number and Type */}
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-1">
+            <div className="text-lg font-bold">
+              {seat.number}번
+            </div>
+            {seat.type_name && (
+              <div className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                {seat.type_name}
+              </div>
+            )}
+          </div>
+          {getStatusBadge(seat.status)}
+        </div>
+
+        {/* Student Info */}
+        {seat.student_name ? (
+          <>
+            <div className="space-y-1">
+              <div className="text-sm font-medium">{seat.student_name}</div>
+              <div className="text-xs text-muted-foreground">
+                {mockStudents.find(s => s.id === seat.student_id)?.grade}학년
+              </div>
+            </div>
+
+            {/* Live Status Indicator (Sleep/Outing) */}
+            {seat.student_id && (
+              <LiveStatusIndicator
+                studentId={seat.student_id}
+                seatNumber={seat.number}
+                studentName={seat.student_name}
+                sleepRecord={sleepRecord}
+                outingRecord={outingRecord}
+                onSleepExpired={handleSleepExpired}
+              />
+            )}
+
+            {/* Elapsed Time (only show when checked in) */}
+            {seat.status === 'checked_in' && seat.check_in_time && (
+              <ElapsedTime checkInTime={seat.check_in_time} />
+            )}
+
+            {/* Toggle Button */}
+            {seat.status !== 'vacant' && (
+              <div className="flex flex-col gap-2">
+                <Button
+                  size="sm"
+                  variant={seat.status === 'checked_in' ? 'outline' : 'default'}
+                  className="w-full"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleToggleAttendance(seat.id)
+                  }}
+                >
+                  {seat.status === 'checked_in' ? '하원 처리' : '등원 처리'}
+                </Button>
+                {seat.status === 'checked_in' && seat.student_id && (
+                  <Button
+                    size="sm"
+                    className="w-full bg-red-600 text-white hover:bg-red-700"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (seat.student_id && seat.student_name) {
+                        handleCallStudent(seat.number, seat.student_id, seat.student_name)
+                      }
+                    }}
+                  >
+                    호출
+                  </Button>
+                )}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-sm text-muted-foreground text-center py-4">
+            배정된 학생 없음
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
 }
 
 const initializeSeats = (totalSeats: number, seatTypes: SeatType[] = []): Seat[] => {
@@ -423,6 +560,7 @@ export default function SeatsPage() {
 
   // URL copy state
   const [urlCopied, setUrlCopied] = useState(false)
+  const [liveScreenUrl, setLiveScreenUrl] = useState('/classflow/livescreen/1')
 
   // Filter students by search query
   const filteredStudents = mockStudents.filter(student =>
@@ -445,6 +583,10 @@ export default function SeatsPage() {
   const vacantSeats = seats.filter(s => s.status === 'vacant').length
   const checkedInSeats = seats.filter(s => s.status === 'checked_in').length
   const checkedOutSeats = seats.filter(s => s.status === 'checked_out').length
+
+  // Realtime status for all seats (optimized: 2 channels for all seats)
+  const allStudentIds = seats.filter(s => s.student_id).map(s => s.student_id!)
+  const { sleepRecords, outingRecords } = useAllSeatsRealtime(allStudentIds)
 
   // Subscribe to call_records
   useEffect(() => {
@@ -521,8 +663,6 @@ export default function SeatsPage() {
     const supabase = createClient()
     const today = new Date().toISOString().split('T')[0]
 
-    console.log('[Manager Calls] Setting up subscription for date:', today)
-
     // Subscribe to changes
     const channel = supabase
       .channel('manager-calls-all')
@@ -534,44 +674,29 @@ export default function SeatsPage() {
           table: 'manager_calls',
         },
         (payload) => {
-          console.log('[Manager Calls] ✅ Received INSERT event:', payload)
           const record = payload.new as any
-          console.log('[Manager Calls] Setting alert state:', {
-            seatNumber: record.seat_number,
-            studentName: record.student_name,
-          })
           setManagerCallAlert({
             seatNumber: record.seat_number,
             studentName: record.student_name,
           })
         }
       )
-      .subscribe((status) => {
-        console.log('[Manager Calls] Subscription status:', status)
-      })
+      .subscribe()
 
     return () => {
-      console.log('[Manager Calls] Unsubscribing')
       channel.unsubscribe()
     }
   }, [])
-
-  // Debug: Log managerCallAlert changes
-  useEffect(() => {
-    console.log('[Manager Calls] 🚨 Alert state changed:', managerCallAlert)
-  }, [managerCallAlert])
 
   // Play alarm when manager call is received
   useEffect(() => {
     if (!managerCallAlert) return
 
-    console.log('[Manager Calls] 🔔 Starting alarm')
     const interval = setInterval(() => {
       playAlarmBeep()
     }, 2000) // Beep every 2 seconds
 
     return () => {
-      console.log('[Manager Calls] 🔕 Stopping alarm')
       clearInterval(interval)
     }
   }, [managerCallAlert])
@@ -617,8 +742,6 @@ export default function SeatsPage() {
 
   // Handle sleep expiration notification
   const handleSleepExpired = (seatNumber: number, studentName: string) => {
-    console.log('⏰ Sleep expired:', { seatNumber, studentName })
-
     // Play alarm immediately
     playAlarmBeep()
 
@@ -635,22 +758,52 @@ export default function SeatsPage() {
   }
 
   // Handle closing sleep alert
-  const handleCloseSleepAlert = () => {
+  const handleCloseSleepAlert = async () => {
     // Stop alarm
     if (alarmInterval) {
       clearInterval(alarmInterval)
       setAlarmInterval(null)
     }
 
+    // Update sleep record status to 'awake' in database
+    if (sleepAlertInfo) {
+      try {
+        const supabase = createClient()
+        const today = new Date().toISOString().split('T')[0]
+
+        const { error } = await supabase
+          .from('sleep_records')
+          .update({
+            wake_time: new Date().toISOString(),
+            status: 'awake'
+          })
+          .eq('seat_number', sleepAlertInfo.seatNumber)
+          .eq('date', today)
+          .eq('status', 'sleeping')
+
+        if (error) {
+          console.error('Error updating sleep record:', error)
+        }
+      } catch (error) {
+        console.error('Error waking student:', error)
+      }
+    }
+
     // Close modal
     setSleepAlertOpen(false)
   }
 
+  // Set liveScreenUrl on mount (client-side only)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setLiveScreenUrl(`${window.location.origin}/classflow/livescreen/1`)
+    }
+  }, [])
+
   // Handle copying livescreen URL
   const handleCopyUrl = async () => {
-    const url = `${window.location.origin}/classflow/livescreen/1`
     try {
-      await navigator.clipboard.writeText(url)
+      await navigator.clipboard.writeText(liveScreenUrl)
       setUrlCopied(true)
       toast({
         title: 'URL 복사 완료',
@@ -716,7 +869,6 @@ export default function SeatsPage() {
 
     try {
       const supabase = createClient()
-      console.log('Deleting call record:', callRecord.id)
 
       const { error } = await supabase
         .from('call_records')
@@ -729,7 +881,6 @@ export default function SeatsPage() {
       setCallRecords((prev) => {
         const newMap = new Map(prev)
         newMap.delete(seatNumber)
-        console.log('Removed from local state, new size:', newMap.size)
         return newMap
       })
 
@@ -1032,7 +1183,7 @@ export default function SeatsPage() {
           <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md">
             <span className="text-sm text-muted-foreground hidden md:inline">학생 화면:</span>
             <code className="text-xs sm:text-sm font-mono bg-background px-2 py-1 rounded border">
-              {typeof window !== 'undefined' ? `${window.location.origin}/classflow/livescreen/1` : '/classflow/livescreen/1'}
+              {liveScreenUrl}
             </code>
             <Button
               variant="ghost"
@@ -1117,133 +1268,19 @@ export default function SeatsPage() {
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {seats.map((seat) => (
-              <Card
+              <SeatCard
                 key={seat.id}
-                className={cn(
-                  "cursor-pointer transition-all hover:shadow-md",
-                  getCardStyle(seat.status)
-                )}
-                onClick={() => handleSeatClick(seat)}
-              >
-                <CardContent className="p-4 space-y-3">
-                  {/* Seat Number and Type */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1">
-                      <div className="text-lg font-bold">
-                        {seat.number}번
-                      </div>
-                      {seat.type_name && (
-                        <div className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                          {seat.type_name}
-                        </div>
-                      )}
-                    </div>
-                    {getStatusBadge(seat.status)}
-                  </div>
-
-                  {/* Student Info */}
-                  {seat.student_name ? (
-                    <>
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium">{seat.student_name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {mockStudents.find(s => s.id === seat.student_id)?.grade}학년
-                        </div>
-                      </div>
-
-                      {/* Live Status Indicator (Sleep/Outing) */}
-                      {seat.student_id && (
-                        <LiveStatusIndicator
-                          studentId={seat.student_id}
-                          seatNumber={seat.number}
-                          studentName={seat.student_name}
-                          onSleepExpired={handleSleepExpired}
-                        />
-                      )}
-
-                      {/* Elapsed Time (only show when checked in) */}
-                      {seat.status === 'checked_in' && seat.check_in_time && (
-                        <ElapsedTime checkInTime={seat.check_in_time} />
-                      )}
-
-                      {/* Toggle Button */}
-                      {seat.status !== 'vacant' && (
-                        <div className="flex flex-col gap-2">
-                          <Button
-                            size="sm"
-                            variant={seat.status === 'checked_in' ? 'outline' : 'default'}
-                            className="w-full"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleToggleAttendance(seat.id)
-                            }}
-                          >
-                            {seat.status === 'checked_in' ? '하원 처리' : '등원 처리'}
-                          </Button>
-                          {seat.status === 'checked_in' && seat.student_id && (() => {
-                            const callRecord = callRecords.get(seat.number)
-
-                            if (callRecord) {
-                              if (callRecord.status === 'calling') {
-                                // 호출 대기 중
-                                return (
-                                  <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    className="w-full animate-pulse bg-yellow-500 hover:bg-yellow-600 text-white"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      // 클릭해도 아무 동작 안 함 (대기 중)
-                                    }}
-                                  >
-                                    유저응답대기중
-                                  </Button>
-                                )
-                              } else if (callRecord.status === 'acknowledged') {
-                                // 유저가 응답함
-                                return (
-                                  <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    className="w-full bg-green-500 hover:bg-green-600 text-white"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleClearAcknowledgedCall(seat.number)
-                                    }}
-                                  >
-                                    유저응답 OK
-                                  </Button>
-                                )
-                              }
-                            }
-
-                            // 일반 호출 버튼
-                            return (
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                className="w-full border-2 border-red-500 hover:border-red-600"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  if (seat.student_id && seat.student_name) {
-                                    handleCallStudent(seat.number, seat.student_id, seat.student_name)
-                                  }
-                                }}
-                              >
-                                호출
-                              </Button>
-                            )
-                          })()}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="text-sm text-muted-foreground text-center py-2">
-                      클릭하여 배정
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                seat={seat}
+                sleepRecord={seat.student_id ? sleepRecords.get(seat.student_id) || null : null}
+                outingRecord={seat.student_id ? outingRecords.get(seat.student_id) || null : null}
+                getCardStyle={getCardStyle}
+                getStatusBadge={getStatusBadge}
+                handleSeatClick={handleSeatClick}
+                handleToggleAttendance={handleToggleAttendance}
+                handleCallStudent={handleCallStudent}
+                handleSleepExpired={handleSleepExpired}
+                mockStudents={mockStudents}
+              />
             ))}
           </div>
         </CardContent>

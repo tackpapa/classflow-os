@@ -26,7 +26,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import { Plus, Pencil, Trash2, MoreHorizontal } from 'lucide-react'
+import { Plus, Pencil, Trash2, MoreHorizontal, RefreshCw } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { StudentSchema, type StudentInput } from '@/lib/validations/student'
@@ -38,6 +38,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { StudentDetailModal } from '@/components/students/StudentDetailModal'
+import { generateUniqueAttendanceCode } from '@/lib/utils/generate-attendance-code'
 
 // Grade options
 const gradeOptions = [
@@ -58,6 +59,7 @@ const mockStudents: Student[] = [
     updated_at: '2025-01-01',
     org_id: 'org-1',
     name: '김민준',
+    attendance_code: '1234',
     grade: '고1',
     school: '강남고등학교',
     phone: '010-1234-5678',
@@ -94,6 +96,7 @@ const mockStudents: Student[] = [
     updated_at: '2025-01-02',
     org_id: 'org-1',
     name: '이서연',
+    attendance_code: '5678',
     grade: '고2',
     school: '서울고등학교',
     phone: '010-2345-6789',
@@ -103,6 +106,56 @@ const mockStudents: Student[] = [
     subjects: ['국어', '사회'],
     status: 'active',
     enrollment_date: '2025-01-02',
+  },
+  {
+    id: '3',
+    created_at: '2025-01-03',
+    updated_at: '2025-01-03',
+    org_id: 'org-1',
+    name: '박준호',
+    attendance_code: '9012',
+    grade: '중3',
+    school: '서울중학교',
+    phone: '010-3456-7890',
+    parent_name: '박아무개',
+    parent_phone: '010-7654-3210',
+    parent_email: 'parent3@example.com',
+    subjects: ['수학', '과학'],
+    status: 'active',
+    enrollment_date: '2025-01-03',
+  },
+  {
+    id: '4',
+    created_at: '2025-01-04',
+    updated_at: '2025-01-04',
+    org_id: 'org-1',
+    name: '최지우',
+    attendance_code: '3456',
+    grade: '고3',
+    school: '강남고등학교',
+    phone: '010-4567-8901',
+    parent_name: '최아무개',
+    parent_phone: '010-6543-2109',
+    subjects: ['영어', '국어'],
+    status: 'active',
+    enrollment_date: '2025-01-04',
+  },
+  {
+    id: '5',
+    created_at: '2025-01-05',
+    updated_at: '2025-01-05',
+    org_id: 'org-1',
+    name: '정수민',
+    attendance_code: '7890',
+    grade: '고1',
+    school: '서울고등학교',
+    phone: '010-5678-9012',
+    parent_name: '정아무개',
+    parent_phone: '010-5432-1098',
+    parent_email: 'parent5@example.com',
+    subjects: ['수학'],
+    status: 'active',
+    enrollment_date: '2025-01-05',
   },
 ]
 
@@ -114,6 +167,7 @@ export default function StudentsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [attendanceCodeError, setAttendanceCodeError] = useState<string>('')
 
   // Student detail modal state
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
@@ -231,6 +285,7 @@ export default function StudentsPage() {
       status: 'active',
       subjects: [],
     })
+    setAttendanceCodeError('')
     setIsDialogOpen(true)
   }
 
@@ -238,6 +293,7 @@ export default function StudentsPage() {
     setEditingStudent(student)
     reset({
       name: student.name,
+      attendance_code: student.attendance_code || '',
       grade: student.grade as StudentInput['grade'],
       school: student.school,
       phone: student.phone,
@@ -252,6 +308,39 @@ export default function StudentsPage() {
     setIsDialogOpen(true)
   }
 
+  const handleGenerateAttendanceCode = () => {
+    const existingCodes = students.map(s => s.attendance_code).filter(Boolean) as string[]
+    const newCode = generateUniqueAttendanceCode(existingCodes)
+    setValue('attendance_code', newCode)
+    setAttendanceCodeError('')
+    toast({
+      title: '출결코드 생성',
+      description: `새로운 출결코드가 생성되었습니다: ${newCode}`,
+    })
+  }
+
+  const handleAttendanceCodeChange = (value: string) => {
+    setValue('attendance_code', value)
+
+    // 4자리가 아니면 검증 안 함
+    if (value.length !== 4) {
+      setAttendanceCodeError('')
+      return
+    }
+
+    // 중복 검증 (수정 시 자기 자신은 제외)
+    const existingCodes = students
+      .filter(s => editingStudent ? s.id !== editingStudent.id : true)
+      .map(s => s.attendance_code)
+      .filter(Boolean) as string[]
+
+    if (existingCodes.includes(value)) {
+      setAttendanceCodeError('이미 사용 중인 출결코드입니다')
+    } else {
+      setAttendanceCodeError('')
+    }
+  }
+
   const handleDelete = (id: string) => {
     if (confirm('정말로 삭제하시겠습니까?')) {
       setStudents(students.filter((s) => s.id !== id))
@@ -263,15 +352,48 @@ export default function StudentsPage() {
   }
 
   const onSubmit = async (data: StudentInput) => {
+    // 출결코드 중복 검증
+    if (attendanceCodeError) {
+      toast({
+        title: '입력 오류',
+        description: attendanceCodeError,
+        variant: 'destructive',
+      })
+      return
+    }
+
     setIsLoading(true)
     try {
+      // 출결코드가 없으면 자동 생성
+      let attendanceCode = data.attendance_code
+      if (!attendanceCode) {
+        const existingCodes = students.map(s => s.attendance_code).filter(Boolean) as string[]
+        attendanceCode = generateUniqueAttendanceCode(existingCodes)
+      } else {
+        // 수동 입력한 경우 최종 중복 검증
+        const existingCodes = students
+          .filter(s => editingStudent ? s.id !== editingStudent.id : true)
+          .map(s => s.attendance_code)
+          .filter(Boolean) as string[]
+
+        if (existingCodes.includes(attendanceCode)) {
+          toast({
+            title: '입력 오류',
+            description: '이미 사용 중인 출결코드입니다',
+            variant: 'destructive',
+          })
+          setIsLoading(false)
+          return
+        }
+      }
+
       // TODO: Supabase integration
       if (editingStudent) {
         // Update existing student
         setStudents(
           students.map((s) =>
             s.id === editingStudent.id
-              ? { ...s, ...data, updated_at: new Date().toISOString() }
+              ? { ...s, ...data, attendance_code: attendanceCode, updated_at: new Date().toISOString() }
               : s
           )
         )
@@ -287,15 +409,17 @@ export default function StudentsPage() {
           updated_at: new Date().toISOString(),
           org_id: 'org-1',
           ...data,
+          attendance_code: attendanceCode,
         } as Student
         setStudents([...students, newStudent])
         toast({
           title: '등록 완료',
-          description: '학생이 등록되었습니다.',
+          description: `학생이 등록되었습니다. 출결코드: ${attendanceCode}`,
         })
       }
       setIsDialogOpen(false)
       reset()
+      setAttendanceCodeError('')
     } catch (error) {
       toast({
         title: '오류 발생',
@@ -350,6 +474,43 @@ export default function StudentsPage() {
                 {errors.name && (
                   <p className="text-sm text-destructive">{errors.name.message}</p>
                 )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="attendance_code">출결코드 (4자리)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="attendance_code"
+                    {...register('attendance_code')}
+                    placeholder="비워두면 자동 생성"
+                    maxLength={4}
+                    disabled={isLoading}
+                    className={attendanceCodeError ? 'border-destructive' : ''}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, '')
+                      handleAttendanceCodeChange(value)
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleGenerateAttendanceCode}
+                    disabled={isLoading}
+                    title="출결코드 자동 생성"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                </div>
+                {attendanceCodeError && (
+                  <p className="text-sm text-destructive">{attendanceCodeError}</p>
+                )}
+                {errors.attendance_code && !attendanceCodeError && (
+                  <p className="text-sm text-destructive">{errors.attendance_code.message}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  학생이 출결 체크 시 사용하는 고유 번호입니다
+                </p>
               </div>
 
               <div className="space-y-2">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { LiveScreenState, SleepRecord, OutingRecord } from '@/lib/types/database'
 
@@ -15,14 +15,9 @@ export function useLivescreenState(studentId: string, seatNumber: number) {
   const [currentOuting, setCurrentOuting] = useState<OutingRecord | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const supabase = createClient()
+  // Memoize supabase client to prevent recreation on every render
+  const supabase = useMemo(() => createClient(), [])
   const today = new Date().toISOString().split('T')[0]
-
-  // Debug: 환경 변수 확인
-  console.log('🔍 Environment variables:', {
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.substring(0, 20) + '...'
-  })
 
   // Load initial state
   useEffect(() => {
@@ -103,7 +98,7 @@ export function useLivescreenState(studentId: string, seatNumber: number) {
       supabase.removeChannel(sleepChannel)
       supabase.removeChannel(outingChannel)
     }
-  }, [studentId, seatNumber, supabase, today])
+  }, [studentId, seatNumber, today])
 
   async function loadState() {
     try {
@@ -188,15 +183,8 @@ export function useLivescreenState(studentId: string, seatNumber: number) {
   }
 
   async function startSleep() {
-    console.log('🛏️ startSleep called')
+    console.log('🛏️ [SLEEP] Starting sleep for seat', seatNumber)
     try {
-      // 임시로 2회 제한 제거
-      // if (state.sleep_count >= 2) {
-      //   throw new Error('오늘은 더 잘 수 없습니다')
-      // }
-
-      console.log('📝 Inserting sleep record...', { studentId, seatNumber, today })
-
       // Insert sleep record
       const { data: sleepRecord, error: sleepError } = await supabase
         .from('sleep_records')
@@ -211,11 +199,11 @@ export function useLivescreenState(studentId: string, seatNumber: number) {
         .single()
 
       if (sleepError) {
-        console.error('❌ Sleep insert error:', sleepError)
+        console.error('❌ [SLEEP] Insert error:', sleepError)
         throw sleepError
       }
 
-      console.log('✅ Sleep record inserted:', sleepRecord)
+      console.log('✅ [SLEEP] Record inserted:', sleepRecord.id)
 
       // Update state
       await updateState({
@@ -223,7 +211,6 @@ export function useLivescreenState(studentId: string, seatNumber: number) {
         current_sleep_id: sleepRecord.id,
       })
 
-      console.log('✅ State updated')
       setCurrentSleep(sleepRecord as SleepRecord)
     } catch (error) {
       console.error('Error starting sleep:', error)
@@ -264,6 +251,7 @@ export function useLivescreenState(studentId: string, seatNumber: number) {
   }
 
   async function startOuting(reason: string) {
+    console.log('🚪 [OUTING] Starting outing for seat', seatNumber)
     try {
       // Insert outing record
       const { data: outingRecord, error: outingError } = await supabase

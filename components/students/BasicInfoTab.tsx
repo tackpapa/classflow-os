@@ -620,6 +620,23 @@ export function BasicInfoTab({ student, onUpdate }: BasicInfoTabProps) {
             </div>
 
             <div>
+              <Label htmlFor="attendance_code">출결 코드 (4자리)</Label>
+              <Input
+                id="attendance_code"
+                value={localStudent.attendance_code || ''}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 4)
+                  handleFieldChange('attendance_code', value)
+                }}
+                placeholder="1234"
+                maxLength={4}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                학생이 출결 체크 시 사용하는 고유 번호입니다
+              </p>
+            </div>
+
+            <div>
               <Label htmlFor="grade">학년</Label>
               <Select
                 value={localStudent.grade}

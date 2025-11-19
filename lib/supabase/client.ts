@@ -21,15 +21,20 @@ export function createClient() {
   if (!supabaseKey ||
       supabaseKey === 'your-supabase-anon-key' ||
       supabaseKey.includes('your-anon-key')) {
-    // 로컬 Supabase 키 하드코딩 (개발용) - 프레젠테이션용 더미 값
-    supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0'
+    // 로컬 Supabase JWT anon 키 (개발용)
+    supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzYzNTMyNTk1LCJleHAiOjIwNzg4OTI1OTV9.SIBJC5Z-rlGxcsZXDScorXHN8iF8utn4Ie4x2q6_iXA'
   }
 
-  console.log('🔧 Supabase client config:', {
-    url: supabaseUrl,
-    keyPrefix: supabaseKey.substring(0, 30) + '...',
-    isProduction: process.env.NODE_ENV === 'production',
+  return createBrowserClient(supabaseUrl, supabaseKey, {
+    realtime: {
+      params: {
+        eventsPerSecond: 10,
+      },
+    },
+    global: {
+      headers: {
+        'x-client-info': 'supabase-js-web',
+      },
+    },
   })
-
-  return createBrowserClient(supabaseUrl, supabaseKey)
 }

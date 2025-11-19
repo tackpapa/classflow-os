@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { ColumnDef } from '@tanstack/react-table'
+import Link from 'next/link'
 import { usePageAccess } from '@/hooks/use-page-access'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -16,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
-import { Calendar, CheckCircle, XCircle, Clock, User } from 'lucide-react'
+import { Calendar, CheckCircle, XCircle, Clock, User, ExternalLink } from 'lucide-react'
 import type { Attendance } from '@/lib/types/database'
 import { format } from 'date-fns'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
@@ -215,9 +216,19 @@ export default function AttendancePage() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold">출결 관리</h1>
-        <p className="text-sm md:text-base text-muted-foreground">학생 출결을 관리하세요</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">출결 관리</h1>
+          <p className="text-sm md:text-base text-muted-foreground">학생 출결을 관리하세요</p>
+        </div>
+        <Link
+          href="/classflow/liveattendance"
+          target="_blank"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
+        >
+          <ExternalLink className="w-4 h-4" />
+          <span>학생용 출결 페이지</span>
+        </Link>
       </div>
 
       {/* 오늘 출결 통계 Cards */}

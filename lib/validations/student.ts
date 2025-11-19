@@ -5,6 +5,7 @@ import { z } from 'zod'
  */
 export const StudentSchema = z.object({
   name: z.string().min(1, '이름을 입력해주세요'),
+  attendance_code: z.string().regex(/^\d{4}$/, '출결코드는 4자리 숫자여야 합니다').optional().or(z.literal('')),
   email: z.string().email('올바른 이메일 형식이 아닙니다').optional().or(z.literal('')),
   phone: z.string().optional(),
   school: z.string().min(1, '학교를 입력해주세요'),

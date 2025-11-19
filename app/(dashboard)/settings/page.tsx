@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
-import { Building2, Plus, Edit, Trash2, DoorOpen, UserPlus, Shield, Menu, ShieldCheck, DollarSign, GripVertical, ArrowUp, ArrowDown, RotateCcw, ChevronUp, ChevronDown, Upload, X, Image as ImageIcon } from 'lucide-react'
+import { Building2, Plus, Edit, Trash2, DoorOpen, UserPlus, Shield, Menu, ShieldCheck, DollarSign, GripVertical, ArrowUp, ArrowDown, RotateCcw, ChevronUp, ChevronDown, Upload, X, Image as ImageIcon, MessageSquare } from 'lucide-react'
 import { navigationItems, getEnabledMenuIds, setEnabledMenuIds } from '@/lib/config/navigation'
 import {
   Dialog,
@@ -996,6 +996,7 @@ export default function SettingsPage() {
           <TabsTrigger value="menus">메뉴 관리</TabsTrigger>
           <TabsTrigger value="automation">자동화</TabsTrigger>
           <TabsTrigger value="notifications">알림</TabsTrigger>
+          <TabsTrigger value="kakaotalk">알림톡 설정</TabsTrigger>
         </TabsList>
 
         {/* Organization Info Tab */}
@@ -2046,6 +2047,227 @@ export default function SettingsPage() {
                   <Switch defaultChecked={i < 3} />
                 </div>
               ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* KakaoTalk Notification Settings Tab */}
+        <TabsContent value="kakaotalk" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                알림톡 설정
+              </CardTitle>
+              <CardDescription>
+                학부모에게 자동으로 발송되는 카카오톡 알림을 설정하세요
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* 출결 관련 알림 - 학원/공부방 전용 */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">
+                  출결 알림 <Badge variant="secondary" className="ml-2">학원·공부방 전용</Badge>
+                </h3>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>지각 안내</Label>
+                    <p className="text-sm text-muted-foreground">
+                      학생이 등록한 스케줄에 맞게 등원하지 않았을 때
+                    </p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>등원 알림</Label>
+                    <p className="text-sm text-muted-foreground">
+                      학생이 등원했을 때
+                    </p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>하원 알림</Label>
+                    <p className="text-sm text-muted-foreground">
+                      학생이 하원했을 때
+                    </p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+              </div>
+
+              {/* 출결 관련 알림 - 독서실 전용 */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">
+                  출결 알림 <Badge variant="secondary" className="ml-2">독서실 전용</Badge>
+                </h3>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>지각 안내</Label>
+                    <p className="text-sm text-muted-foreground">
+                      학생이 등록한 스케줄에 맞게 입실하지 않았을 때
+                    </p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>입실 알림</Label>
+                    <p className="text-sm text-muted-foreground">
+                      학생이 독서실에 입실했을 때
+                    </p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>퇴실 알림</Label>
+                    <p className="text-sm text-muted-foreground">
+                      학생이 독서실에서 퇴실했을 때
+                    </p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>외출 알림</Label>
+                    <p className="text-sm text-muted-foreground">
+                      학생이 외출했을 때
+                    </p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>복귀 알림</Label>
+                    <p className="text-sm text-muted-foreground">
+                      학생이 외출 후 복귀했을 때
+                    </p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+              </div>
+
+              {/* 학습 관련 알림 - 독서실 전용 */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">
+                  학습 알림 <Badge variant="secondary" className="ml-2">독서실 전용</Badge>
+                </h3>
+
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5 flex-1">
+                      <Label>당일 학습 진행 결과 (일괄 전송)</Label>
+                      <p className="text-sm text-muted-foreground">
+                        매일 설정된 시간에 오늘의 플래너 데이터를 학부모에게 일괄 전송
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        💡 학생이 하루에 여러 번 입실/퇴실해도 플래너는 하루 단위로 유지되며, 설정 시간에 한 번만 전송됩니다
+                      </p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+
+                  <div className="flex items-center gap-4 pt-2 border-t">
+                    <Label htmlFor="daily-report-time" className="text-sm whitespace-nowrap">
+                      전송 시간
+                    </Label>
+                    <Select defaultValue="22:00">
+                      <SelectTrigger id="daily-report-time" className="w-32">
+                        <SelectValue placeholder="시간 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="18:00">오후 6시</SelectItem>
+                        <SelectItem value="19:00">오후 7시</SelectItem>
+                        <SelectItem value="20:00">오후 8시</SelectItem>
+                        <SelectItem value="21:00">오후 9시</SelectItem>
+                        <SelectItem value="22:00">오후 10시 (기본)</SelectItem>
+                        <SelectItem value="23:00">오후 11시</SelectItem>
+                        <SelectItem value="00:00">자정</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      매일 이 시간에 자동으로 전송됩니다
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 수업일지 알림 - 학원/공부방 전용 */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">
+                  수업일지 알림 <Badge variant="secondary" className="ml-2">학원·공부방 전용</Badge>
+                </h3>
+
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>수업일지 전송 (관리자 승인 후)</Label>
+                      <p className="text-sm text-muted-foreground">
+                        강사가 수업일지 작성 → 관리자 승인 → 학부모에게 전송
+                      </p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded">
+                    💡 강사가 작성한 수업일지는 관리자가 승인 버튼을 눌러야 학부모에게 발송됩니다
+                  </div>
+                </div>
+              </div>
+
+              {/* 시험 관리 알림 - 학원/공부방 전용 */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">
+                  시험 관리 알림 <Badge variant="secondary" className="ml-2">학원·공부방 전용</Badge>
+                </h3>
+
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>시험 결과 전송 (관리자 승인 후)</Label>
+                      <p className="text-sm text-muted-foreground">
+                        시험 결과 입력 → 관리자 승인 → 학부모에게 전송
+                      </p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded">
+                    💡 시험 결과는 관리자가 승인 버튼을 눌러야 학부모에게 발송됩니다
+                  </div>
+                </div>
+              </div>
+
+              {/* 과제 관리 알림 - 학원/공부방 전용 */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">
+                  과제 관리 알림 <Badge variant="secondary" className="ml-2">학원·공부방 전용</Badge>
+                </h3>
+
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>과제 전송 (관리자 승인 후)</Label>
+                      <p className="text-sm text-muted-foreground">
+                        과제 등록 → 관리자 승인 → 학부모에게 전송
+                      </p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded">
+                    💡 과제 정보는 관리자가 승인 버튼을 눌러야 학부모에게 발송됩니다
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

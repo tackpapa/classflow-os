@@ -21,6 +21,7 @@ export interface Student {
   updated_at: string
   org_id: string
   name: string
+  attendance_code?: string // 출결용 4자리 고유 번호 (자동 생성, 변경 불가)
   grade: string // 중1, 중2, 중3, 고1, 고2, 고3, 재수
   school: string // 학교명
   phone: string

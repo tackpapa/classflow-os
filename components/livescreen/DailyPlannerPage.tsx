@@ -15,6 +15,7 @@ interface DailyPlannerPageProps {
   existingPlanner?: DailyPlanner
   onSave: (planner: DailyPlanner) => void
   onBack: () => void
+  containerRef?: React.RefObject<HTMLDivElement>
 }
 
 export function DailyPlannerPage({
@@ -23,6 +24,7 @@ export function DailyPlannerPage({
   existingPlanner,
   onSave,
   onBack,
+  containerRef,
 }: DailyPlannerPageProps) {
   const [plans, setPlans] = useState<StudyPlan[]>(
     existingPlanner?.study_plans || []
@@ -31,7 +33,7 @@ export function DailyPlannerPage({
   const [newPlanSubject, setNewPlanSubject] = useState('')
   const [newPlanDescription, setNewPlanDescription] = useState('')
 
-  const handleAddPlan = () => {
+  const handleAddPlan = async () => {
     if (!newPlanSubject.trim()) return
 
     const newPlan: StudyPlan = {
@@ -41,9 +43,44 @@ export function DailyPlannerPage({
       completed: false,
     }
 
-    setPlans([...plans, newPlan])
+    const updatedPlans = [...plans, newPlan]
+    setPlans(updatedPlans)
     setNewPlanSubject('')
     setNewPlanDescription('')
+
+    // 1. 저장
+    const planner: DailyPlanner = {
+      id: existingPlanner?.id || `planner-${Date.now()}`,
+      created_at: existingPlanner?.created_at || new Date().toISOString(),
+      student_id: studentId,
+      seat_number: seatNumber,
+      date: new Date().toISOString().split('T')[0],
+      study_plans: updatedPlans,
+      notes,
+    }
+    onSave(planner)
+
+    // 2. 풀스크린 함수 실행
+    if (containerRef?.current) {
+      const container = containerRef.current as any
+      const isInFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).webkitCurrentFullScreenElement
+      )
+
+      if (!isInFullscreen) {
+        try {
+          if (typeof container.webkitRequestFullscreen === 'function') {
+            await container.webkitRequestFullscreen()
+          } else if (typeof container.requestFullscreen === 'function') {
+            await container.requestFullscreen()
+          }
+        } catch (error) {
+          // Silently fail
+        }
+      }
+    }
   }
 
   const handleToggleComplete = (planId: string) => {
@@ -78,27 +115,21 @@ export function DailyPlannerPage({
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/30 flex flex-col">
       {/* Header */}
       <div className="bg-white border-b shadow-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onBack}
-              className="h-9 w-9"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold">오늘의 공부 계획</h1>
-              <p className="text-sm text-muted-foreground">
-                {completedCount}/{plans.length} 완료
-              </p>
-            </div>
-          </div>
-          <Button onClick={handleSave} size="lg">
-            <Check className="h-5 w-5 mr-2" />
-            저장
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onBack}
+            className="h-9 w-9"
+          >
+            <ArrowLeft className="h-5 w-5" />
           </Button>
+          <div>
+            <h1 className="text-xl font-bold">오늘의 공부 계획</h1>
+            <p className="text-sm text-muted-foreground">
+              {completedCount}/{plans.length} 완료
+            </p>
+          </div>
         </div>
       </div>
 

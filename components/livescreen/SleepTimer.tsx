@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { MoonStar, X } from 'lucide-react'
 
@@ -11,9 +12,30 @@ interface SleepTimerProps {
 
 export function SleepTimer({ remainingSeconds, onWakeUp }: SleepTimerProps) {
   const [mounted, setMounted] = useState(false)
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null)
 
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  // Track fullscreen container for portals
+  useEffect(() => {
+    const updateContainer = () => {
+      const fullscreenElement = (
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).webkitCurrentFullScreenElement
+      ) as HTMLElement
+      setPortalContainer(fullscreenElement || document.body)
+    }
+
+    updateContainer()
+    document.addEventListener('fullscreenchange', updateContainer)
+    document.addEventListener('webkitfullscreenchange', updateContainer)
+    return () => {
+      document.removeEventListener('fullscreenchange', updateContainer)
+      document.removeEventListener('webkitfullscreenchange', updateContainer)
+    }
   }, [])
 
   const formatTime = (seconds: number) => {
@@ -22,9 +44,9 @@ export function SleepTimer({ remainingSeconds, onWakeUp }: SleepTimerProps) {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
   }
 
-  if (!mounted) return null
+  if (!mounted || !portalContainer) return null
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 bg-gradient-to-br from-red-500 to-red-700 flex flex-col items-center justify-center">
       {/* Close Button */}
       <Button
@@ -71,6 +93,7 @@ export function SleepTimer({ remainingSeconds, onWakeUp }: SleepTimerProps) {
           }}
         />
       </div>
-    </div>
+    </div>,
+    portalContainer
   )
 }

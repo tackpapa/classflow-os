@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { DoorOpen, X } from 'lucide-react'
 
@@ -13,9 +14,30 @@ interface OutingScreenProps {
 export function OutingScreen({ outingTime, reason, onReturn }: OutingScreenProps) {
   const [mounted, setMounted] = useState(false)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null)
 
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  // Track fullscreen container for portals
+  useEffect(() => {
+    const updateContainer = () => {
+      const fullscreenElement = (
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).webkitCurrentFullScreenElement
+      ) as HTMLElement
+      setPortalContainer(fullscreenElement || document.body)
+    }
+
+    updateContainer()
+    document.addEventListener('fullscreenchange', updateContainer)
+    document.addEventListener('webkitfullscreenchange', updateContainer)
+    return () => {
+      document.removeEventListener('fullscreenchange', updateContainer)
+      document.removeEventListener('webkitfullscreenchange', updateContainer)
+    }
   }, [])
 
   useEffect(() => {
@@ -38,9 +60,9 @@ export function OutingScreen({ outingTime, reason, onReturn }: OutingScreenProps
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
   }
 
-  if (!mounted) return null
+  if (!mounted || !portalContainer) return null
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 bg-gradient-to-br from-blue-500 to-blue-700 flex flex-col items-center justify-center">
       {/* Close Button */}
       <Button
@@ -87,6 +109,7 @@ export function OutingScreen({ outingTime, reason, onReturn }: OutingScreenProps
           }}
         />
       </div>
-    </div>
+    </div>,
+    portalContainer
   )
 }

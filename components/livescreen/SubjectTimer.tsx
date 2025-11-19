@@ -8,10 +8,12 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Play, Pause, Plus, Trash2, Edit2 } from 'lucide-react'
 import type { Subject, StudySession, SubjectStatistics } from '@/lib/types/database'
+import type { Theme } from '@/hooks/use-theme'
 
 interface SubjectTimerProps {
   studentId: string
   containerRef?: React.RefObject<HTMLDivElement>
+  theme?: Theme
 }
 
 const DEFAULT_COLORS = [
@@ -25,7 +27,7 @@ const DEFAULT_COLORS = [
   '#FF5722', // 딥오렌지
 ]
 
-export function SubjectTimer({ studentId, containerRef }: SubjectTimerProps) {
+export function SubjectTimer({ studentId, containerRef, theme = 'color' }: SubjectTimerProps) {
   // State
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [activeSession, setActiveSession] = useState<StudySession | null>(null)
@@ -337,43 +339,89 @@ export function SubjectTimer({ studentId, containerRef }: SubjectTimerProps) {
       {/* Split Timer Display - Takes up most of the vertical space */}
       <div className="grid grid-cols-2 gap-3 flex-1 min-h-[100px] mb-3">
         {/* Left: Total Study Time */}
-        <Card className="bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 border-0 overflow-hidden relative h-full min-h-0">
+        <Card className={`border-0 overflow-hidden relative h-full min-h-0 ${
+          theme === 'dark'
+            ? 'bg-[#161b22] border border-[#30363d]'
+            : theme === 'white'
+            ? 'bg-white border-2 border-orange-300'
+            : 'bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600'
+        }`}>
           <CardContent className="p-6 md:p-8 h-full flex flex-col justify-center">
             {/* Decorative wave pattern */}
-            <div className="absolute top-0 left-0 right-0 h-16 opacity-20">
-              <svg className="w-full h-full" viewBox="0 0 400 60" preserveAspectRatio="none">
-                <path d="M0,30 Q100,10 200,30 T400,30 L400,0 L0,0 Z" fill="white" />
-                <path d="M0,40 Q100,20 200,40 T400,40 L400,0 L0,0 Z" fill="white" opacity="0.5" />
-              </svg>
-            </div>
+            {theme === 'color' && (
+              <div className="absolute top-0 left-0 right-0 h-16 opacity-20">
+                <svg className="w-full h-full" viewBox="0 0 400 60" preserveAspectRatio="none">
+                  <path d="M0,30 Q100,10 200,30 T400,30 L400,0 L0,0 Z" fill="white" />
+                  <path d="M0,40 Q100,20 200,40 T400,40 L400,0 L0,0 Z" fill="white" opacity="0.5" />
+                </svg>
+              </div>
+            )}
 
             <div className="relative text-center">
-              <p className="text-white/90 text-xs sm:text-sm md:text-base font-medium mb-2 sm:mb-3 md:mb-4">Total Study Time</p>
+              <p className={`text-xs sm:text-sm md:text-base font-medium mb-2 sm:mb-3 md:mb-4 ${
+                theme === 'dark'
+                  ? 'text-[#8b949e]'
+                  : theme === 'white'
+                  ? 'text-orange-600'
+                  : 'text-white/90'
+              }`}>
+                Total Study Time
+              </p>
               <div className="flex items-baseline justify-center gap-1 mb-2 sm:mb-3 md:mb-4">
-                <h1 className="text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tight">
+                <h1 className={`text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tight ${
+                  theme === 'dark'
+                    ? 'text-[#c9d1d9]'
+                    : theme === 'white'
+                    ? 'text-orange-600'
+                    : 'text-white'
+                }`}>
                   {formatTime(totalSeconds)}
                 </h1>
               </div>
-              <p className="text-white/80 text-xs sm:text-sm md:text-base">순공타임 (실제 공부시간)</p>
+              <p className={`text-xs sm:text-sm md:text-base ${
+                theme === 'dark'
+                  ? 'text-[#8b949e]'
+                  : theme === 'white'
+                  ? 'text-orange-500'
+                  : 'text-white/80'
+              }`}>
+                순공타임 (실제 공부시간)
+              </p>
             </div>
           </CardContent>
         </Card>
 
         {/* Right: Pomodoro Timer */}
-        <Card className="bg-gradient-to-br from-blue-400 via-cyan-500 to-teal-600 border-0 overflow-hidden relative h-full min-h-0">
+        <Card className={`border-0 overflow-hidden relative h-full min-h-0 ${
+          theme === 'dark'
+            ? 'bg-[#161b22] border border-[#30363d]'
+            : theme === 'white'
+            ? 'bg-white border-2 border-blue-300'
+            : 'bg-gradient-to-br from-blue-400 via-cyan-500 to-teal-600'
+        }`}>
           <CardContent className="p-6 md:p-8 h-full flex flex-col justify-center">
             {/* Decorative wave pattern */}
-            <div className="absolute top-0 left-0 right-0 h-16 opacity-20">
-              <svg className="w-full h-full" viewBox="0 0 400 60" preserveAspectRatio="none">
-                <path d="M0,30 Q100,10 200,30 T400,30 L400,0 L0,0 Z" fill="white" />
-                <path d="M0,40 Q100,20 200,40 T400,40 L400,0 L0,0 Z" fill="white" opacity="0.5" />
-              </svg>
-            </div>
+            {theme === 'color' && (
+              <div className="absolute top-0 left-0 right-0 h-16 opacity-20">
+                <svg className="w-full h-full" viewBox="0 0 400 60" preserveAspectRatio="none">
+                  <path d="M0,30 Q100,10 200,30 T400,30 L400,0 L0,0 Z" fill="white" />
+                  <path d="M0,40 Q100,20 200,40 T400,40 L400,0 L0,0 Z" fill="white" opacity="0.5" />
+                </svg>
+              </div>
+            )}
 
             <div className="relative">
               {/* Header */}
               <div className="text-center mb-2 sm:mb-3 md:mb-4">
-                <p className="text-white/90 text-xs sm:text-sm md:text-base font-medium">Pomodoro</p>
+                <p className={`text-xs sm:text-sm md:text-base font-medium ${
+                  theme === 'dark'
+                    ? 'text-gray-300'
+                    : theme === 'white'
+                    ? 'text-blue-600'
+                    : 'text-white/90'
+                }`}>
+                  Pomodoro
+                </p>
               </div>
 
               {/* Timer Display */}
@@ -381,18 +429,36 @@ export function SubjectTimer({ studentId, containerRef }: SubjectTimerProps) {
                 {!isPomodoroRunning && (
                   <button
                     onClick={() => handlePomodoroMinutesChange(Math.floor(pomodoroTotalSeconds / 60) - 5)}
-                    className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm flex items-center justify-center text-white text-lg sm:text-xl md:text-2xl font-bold transition-all"
+                    className={`h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-full backdrop-blur-sm flex items-center justify-center text-lg sm:text-xl md:text-2xl font-bold transition-all ${
+                      theme === 'dark'
+                        ? 'bg-gray-600 hover:bg-gray-500 text-gray-200'
+                        : theme === 'white'
+                        ? 'bg-blue-100 hover:bg-blue-200 text-blue-700 border-2 border-blue-300'
+                        : 'bg-white/20 hover:bg-white/30 text-white'
+                    }`}
                   >
                     -
                   </button>
                 )}
-                <h1 className="text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tight font-mono tabular-nums">
+                <h1 className={`text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tight font-mono tabular-nums ${
+                  theme === 'dark'
+                    ? 'text-gray-100'
+                    : theme === 'white'
+                    ? 'text-blue-600'
+                    : 'text-white'
+                }`}>
                   {String(pomodoroMinutes).padStart(2, '0')}:{String(pomodoroSeconds).padStart(2, '0')}
                 </h1>
                 {!isPomodoroRunning && (
                   <button
                     onClick={() => handlePomodoroMinutesChange(Math.floor(pomodoroTotalSeconds / 60) + 5)}
-                    className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm flex items-center justify-center text-white text-lg sm:text-xl md:text-2xl font-bold transition-all"
+                    className={`h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-full backdrop-blur-sm flex items-center justify-center text-lg sm:text-xl md:text-2xl font-bold transition-all ${
+                      theme === 'dark'
+                        ? 'bg-gray-600 hover:bg-gray-500 text-gray-200'
+                        : theme === 'white'
+                        ? 'bg-blue-100 hover:bg-blue-200 text-blue-700 border-2 border-blue-300'
+                        : 'bg-white/20 hover:bg-white/30 text-white'
+                    }`}
                   >
                     +
                   </button>
@@ -404,7 +470,13 @@ export function SubjectTimer({ studentId, containerRef }: SubjectTimerProps) {
                 {!isPomodoroRunning ? (
                   <Button
                     onClick={handlePomodoroStart}
-                    className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/40 text-white h-8 sm:h-10 md:h-12 px-3 sm:px-4 md:px-6 text-xs sm:text-sm md:text-base"
+                    className={`backdrop-blur-sm h-8 sm:h-10 md:h-12 px-3 sm:px-4 md:px-6 text-xs sm:text-sm md:text-base ${
+                      theme === 'dark'
+                        ? 'bg-gray-600 hover:bg-gray-500 border border-gray-500 text-gray-200'
+                        : theme === 'white'
+                        ? 'bg-blue-500 hover:bg-blue-600 border border-blue-600 text-white'
+                        : 'bg-white/20 hover:bg-white/30 border border-white/40 text-white'
+                    }`}
                   >
                     <Play className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-1.5 md:mr-2" />
                     Start
@@ -412,7 +484,13 @@ export function SubjectTimer({ studentId, containerRef }: SubjectTimerProps) {
                 ) : (
                   <Button
                     onClick={handlePomodoroPause}
-                    className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/40 text-white h-8 sm:h-10 md:h-12 px-3 sm:px-4 md:px-6 text-xs sm:text-sm md:text-base"
+                    className={`backdrop-blur-sm h-8 sm:h-10 md:h-12 px-3 sm:px-4 md:px-6 text-xs sm:text-sm md:text-base ${
+                      theme === 'dark'
+                        ? 'bg-gray-600 hover:bg-gray-500 border border-gray-500 text-gray-200'
+                        : theme === 'white'
+                        ? 'bg-blue-500 hover:bg-blue-600 border border-blue-600 text-white'
+                        : 'bg-white/20 hover:bg-white/30 border border-white/40 text-white'
+                    }`}
                   >
                     <Pause className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-1.5 md:mr-2" />
                     Pause
@@ -421,7 +499,13 @@ export function SubjectTimer({ studentId, containerRef }: SubjectTimerProps) {
                 <Button
                   onClick={handlePomodoroReset}
                   variant="ghost"
-                  className="text-white/80 hover:text-white hover:bg-white/10 h-8 sm:h-10 md:h-12 px-3 sm:px-4 md:px-6 text-xs sm:text-sm md:text-base"
+                  className={`h-8 sm:h-10 md:h-12 px-3 sm:px-4 md:px-6 text-xs sm:text-sm md:text-base ${
+                    theme === 'dark'
+                      ? 'text-gray-300 hover:text-gray-100 hover:bg-gray-600'
+                      : theme === 'white'
+                      ? 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                  }`}
                 >
                   Reset
                 </Button>
@@ -440,33 +524,61 @@ export function SubjectTimer({ studentId, containerRef }: SubjectTimerProps) {
           return (
             <Card
               key={subject.id}
-              className="border-0 shadow-lg flex-shrink-0 w-72 h-72 snap-center relative overflow-hidden"
+              className={`shadow-lg flex-shrink-0 w-72 h-72 snap-center relative overflow-hidden ${
+                theme === 'white' ? 'bg-white border-4' : 'border-0'
+              }`}
               style={{
-                background: `linear-gradient(135deg, ${subject.color} 0%, ${subject.color}dd 100%)`,
+                background: theme === 'white' ? 'white' : theme === 'dark'
+                  ? `linear-gradient(135deg, ${subject.color}40 0%, ${subject.color}60 100%)`
+                  : `linear-gradient(135deg, ${subject.color} 0%, ${subject.color}dd 100%)`,
+                borderColor: theme === 'white' ? subject.color : undefined,
               }}
             >
               {/* Delete Button - Top Right */}
               <Button
                 size="icon"
                 variant="ghost"
-                className="absolute top-2 right-2 h-8 w-8 z-10 bg-black/20 hover:bg-black/40 backdrop-blur-sm"
+                className={`absolute top-2 right-2 h-8 w-8 z-10 backdrop-blur-sm ${
+                  theme === 'white'
+                    ? 'bg-gray-100 hover:bg-gray-200'
+                    : 'bg-black/20 hover:bg-black/40'
+                }`}
                 onClick={() => handleDeleteSubject(subject.id)}
               >
-                <Trash2 className="h-4 w-4 text-white" />
+                <Trash2 className={`h-4 w-4 ${
+                  theme === 'white' ? 'text-gray-700' : 'text-white'
+                }`} />
               </Button>
 
               <CardContent className="p-6 h-full flex flex-col justify-between">
                 {/* Subject Name */}
                 <div className="mb-4">
-                  <h3 className="text-3xl font-bold text-white truncate">
+                  <h3
+                    className="text-3xl font-bold truncate"
+                    style={{
+                      color: theme === 'white' ? subject.color : theme === 'dark' ? '#f3f4f6' : 'white',
+                    }}
+                  >
                     {subject.name}
                   </h3>
                 </div>
 
                 {/* Time Display */}
                 <div className="mb-6 flex-1 flex flex-col justify-center">
-                  <p className="text-white/80 text-sm mb-2">Total Time</p>
-                  <p className="text-5xl font-bold text-white font-mono tabular-nums">
+                  <p
+                    className="text-sm mb-2"
+                    style={{
+                      color: theme === 'white' ? `${subject.color}cc` : theme === 'dark' ? '#d1d5db' : 'rgba(255,255,255,0.8)',
+                    }}
+                  >
+                    순공의 {totalSeconds > 0 ? Math.round((stats.total_seconds / totalSeconds) * 100) : 0}%
+                  </p>
+                  <p
+                    className="text-5xl font-bold font-mono tabular-nums"
+                    style={{
+                      color: theme === 'white' ? subject.color : theme === 'dark' ? '#f3f4f6' : 'white',
+                    }}
+                  >
                     {formatDuration(stats.total_seconds)}
                   </p>
                 </div>
@@ -474,18 +586,36 @@ export function SubjectTimer({ studentId, containerRef }: SubjectTimerProps) {
                 {/* Play/Pause Button */}
                 <Button
                   size="lg"
-                  className="w-full h-14 rounded-xl font-semibold shadow-md bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/40"
+                  className={`w-full h-14 rounded-xl font-semibold shadow-md backdrop-blur-sm ${
+                    theme === 'white'
+                      ? 'border-2 hover:opacity-90'
+                      : theme === 'dark'
+                      ? 'bg-gray-700 hover:bg-gray-600 border border-gray-600'
+                      : 'bg-white/20 hover:bg-white/30 border border-white/40'
+                  }`}
+                  style={{
+                    backgroundColor: theme === 'white' ? subject.color : undefined,
+                    borderColor: theme === 'white' ? subject.color : undefined,
+                  }}
                   onClick={() => isActive ? handleStopSession() : handleStartSession(subject)}
                 >
                   {isActive ? (
                     <>
-                      <Pause className="h-6 w-6 mr-2 text-white" />
-                      <span className="text-white text-lg">Pause</span>
+                      <Pause className={`h-6 w-6 mr-2 ${
+                        theme === 'dark' ? 'text-gray-200' : 'text-white'
+                      }`} />
+                      <span className={`text-lg ${
+                        theme === 'dark' ? 'text-gray-200' : 'text-white'
+                      }`}>Pause</span>
                     </>
                   ) : (
                     <>
-                      <Play className="h-6 w-6 mr-2 text-white" />
-                      <span className="text-white text-lg">Start</span>
+                      <Play className={`h-6 w-6 mr-2 ${
+                        theme === 'dark' ? 'text-gray-200' : 'text-white'
+                      }`} />
+                      <span className={`text-lg ${
+                        theme === 'dark' ? 'text-gray-200' : 'text-white'
+                      }`}>Start</span>
                     </>
                   )}
                 </Button>
@@ -496,7 +626,11 @@ export function SubjectTimer({ studentId, containerRef }: SubjectTimerProps) {
 
         {/* Add Subject Button */}
         <Card
-          className="border-2 border-dashed border-gray-300 bg-gray-50/50 hover:border-gray-400 hover:bg-gray-100/50 transition-all cursor-pointer flex-shrink-0 w-72 h-72 snap-center"
+          className={`border-2 border-dashed transition-all cursor-pointer flex-shrink-0 w-72 h-72 snap-center ${
+            theme === 'dark'
+              ? 'border-gray-600 bg-gray-800/50 hover:border-gray-500 hover:bg-gray-700/50'
+              : 'border-gray-300 bg-gray-50/50 hover:border-gray-400 hover:bg-gray-100/50'
+          }`}
           onClick={async () => {
             // 풀스크린 상태 저장
             const isInFullscreen = !!(
@@ -526,10 +660,20 @@ export function SubjectTimer({ studentId, containerRef }: SubjectTimerProps) {
         >
           <CardContent className="p-6 h-full flex flex-col items-center justify-center">
             <div className="text-center">
-              <div className="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center mx-auto mb-4">
-                <Plus className="h-8 w-8 text-gray-600" />
+              <div className={`h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                theme === 'dark'
+                  ? 'bg-gray-700'
+                  : 'bg-gray-200'
+              }`}>
+                <Plus className={`h-8 w-8 ${
+                  theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                }`} />
               </div>
-              <p className="text-lg font-bold text-gray-700">과목 추가하기</p>
+              <p className={`text-lg font-bold ${
+                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              }`}>
+                과목 추가하기
+              </p>
             </div>
           </CardContent>
         </Card>

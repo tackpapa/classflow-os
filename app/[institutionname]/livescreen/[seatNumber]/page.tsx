@@ -3,6 +3,7 @@
 export const runtime = 'edge'
 
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -35,6 +36,7 @@ import { SleepTimer } from '@/components/livescreen/SleepTimer'
 import { StudyStatistics } from '@/components/livescreen/StudyStatistics'
 import { OutingScreen } from '@/components/livescreen/OutingScreen'
 import { useLivescreenState } from '@/hooks/use-livescreen-state'
+import { useTheme, type Theme } from '@/hooks/use-theme'
 import type {
   DailyPlanner,
   OutingRecord,
@@ -80,12 +82,16 @@ export default function LiveScreenPage({ params }: PageProps) {
   const [studyTimeMinutes, setStudyTimeMinutes] = useState(0)
   const [currentCall, setCurrentCall] = useState<CallRecord | null>(null)
 
+  // Theme
+  const { theme, setTheme } = useTheme()
+
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const [managerCallModalOpen, setManagerCallModalOpen] = useState(false)
   const [fullscreenPromptOpen, setFullscreenPromptOpen] = useState(false)
   const [isIOSDevice, setIsIOSDevice] = useState(false)
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null)
 
   // Mock ranking data
   const [rankings] = useState<{
@@ -154,13 +160,21 @@ export default function LiveScreenPage({ params }: PageProps) {
   // Fullscreen functionality
   useEffect(() => {
     const handleFullscreenChange = () => {
-      const isFullscreen = !!(
+      const fullscreenElement = (
         document.fullscreenElement ||
         (document as any).webkitFullscreenElement ||
         (document as any).webkitCurrentFullScreenElement
-      )
+      ) as HTMLElement
+
+      const isFullscreen = !!fullscreenElement
       setIsFullscreen(isFullscreen)
+
+      // Update portal container
+      setPortalContainer(fullscreenElement || document.body)
     }
+
+    // Initial update
+    handleFullscreenChange()
 
     // Listen to both standard and webkit events
     document.addEventListener('fullscreenchange', handleFullscreenChange)
@@ -553,7 +567,7 @@ export default function LiveScreenPage({ params }: PageProps) {
       )}
 
       {/* Full Screen Call Notification */}
-      {currentCall && (
+      {currentCall && portalContainer && createPortal(
         <div className="fixed inset-0 z-50 bg-red-500 flex items-center justify-center">
           <div className="text-center space-y-8 p-8">
             <div className="space-y-4">
@@ -573,13 +587,30 @@ export default function LiveScreenPage({ params }: PageProps) {
               OK
             </Button>
           </div>
-        </div>
+        </div>,
+        portalContainer
       )}
 
-      <div ref={containerRef} data-fullscreen-container className="h-screen bg-gradient-to-br from-white to-gray-50 flex flex-col overflow-hidden">
+      <div
+        ref={containerRef}
+        data-fullscreen-container
+        className={`h-screen flex flex-col overflow-hidden ${
+          theme === 'dark'
+            ? 'bg-[#0d1117]'
+            : theme === 'white'
+            ? 'bg-white'
+            : 'bg-gradient-to-br from-white to-gray-50'
+        }`}
+      >
         {/* Compact Header */}
         <div className="max-w-7xl mx-auto w-full px-3 pt-2 pb-1 flex-shrink-0">
-          <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+          <Card className={`border ${
+            theme === 'dark'
+              ? 'bg-[#161b22] border-[#30363d]'
+              : theme === 'white'
+              ? 'bg-white border-gray-200'
+              : 'bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20'
+          }`}>
             <CardHeader className="p-2.5">
               <div className="flex items-center justify-between gap-2">
                 {/* Left: Back button + Student info */}
@@ -589,7 +620,9 @@ export default function LiveScreenPage({ params }: PageProps) {
                       variant="ghost"
                       size="icon"
                       onClick={handleEnterFullscreen}
-                      className="h-7 w-7 flex-shrink-0"
+                      className={`h-7 w-7 flex-shrink-0 ${
+                        theme === 'dark' ? 'text-[#c9d1d9] hover:text-white hover:bg-[#21262d]' : ''
+                      }`}
                       title="전체화면 모드"
                     >
                       <Maximize2 className="h-3.5 w-3.5" />
@@ -599,30 +632,83 @@ export default function LiveScreenPage({ params }: PageProps) {
                       variant="ghost"
                       size="icon"
                       onClick={handleExitFullscreen}
-                      className="h-7 w-7 flex-shrink-0"
+                      className={`h-7 w-7 flex-shrink-0 ${
+                        theme === 'dark' ? 'text-[#c9d1d9] hover:text-white hover:bg-[#21262d]' : ''
+                      }`}
                       title="전체화면 종료"
                     >
                       <Unlock className="h-3.5 w-3.5" />
                     </Button>
                   )}
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <Badge variant="outline" className="text-xs px-1.5 py-0.5 flex-shrink-0">
+                    <Badge
+                      variant="outline"
+                      className={`text-xs px-1.5 py-0.5 flex-shrink-0 ${
+                        theme === 'dark'
+                          ? 'border-[#30363d] text-[#c9d1d9]'
+                          : theme === 'white'
+                          ? 'border-gray-300'
+                          : ''
+                      }`}
+                    >
                       {seatNumber}번
                     </Badge>
                     <div className="min-w-0">
-                      <CardTitle className="text-base md:text-lg truncate">{studentName} 님</CardTitle>
+                      <CardTitle className={`text-base md:text-lg truncate ${
+                        theme === 'dark' ? 'text-[#c9d1d9]' : ''
+                      }`}>
+                        {studentName} 님
+                      </CardTitle>
                     </div>
                   </div>
                 </div>
 
+                {/* Center: Theme Toggle Buttons */}
+                <div className="flex items-center gap-6 absolute left-1/2 transform -translate-x-1/2">
+                  <button
+                    onClick={() => setTheme('color')}
+                    className={`h-6 w-6 rounded-full transition-all ${
+                      theme === 'color'
+                        ? 'ring-2 ring-offset-2 ring-primary scale-110'
+                        : 'hover:scale-105 opacity-60 hover:opacity-100'
+                    }`}
+                    style={{ background: 'linear-gradient(135deg, #EC4899 0%, #8B5CF6 50%, #3B82F6 100%)' }}
+                    title="컬러 모드"
+                  />
+                  <button
+                    onClick={() => setTheme('dark')}
+                    className={`h-6 w-6 rounded-full bg-gray-800 transition-all ${
+                      theme === 'dark'
+                        ? 'ring-2 ring-offset-2 ring-gray-600 scale-110'
+                        : 'hover:scale-105 opacity-60 hover:opacity-100'
+                    }`}
+                    title="다크 모드"
+                  />
+                  <button
+                    onClick={() => setTheme('white')}
+                    className={`h-6 w-6 rounded-full bg-white border-2 border-gray-300 transition-all ${
+                      theme === 'white'
+                        ? 'ring-2 ring-offset-2 ring-gray-400 scale-110'
+                        : 'hover:scale-105 opacity-60 hover:opacity-100'
+                    }`}
+                    title="화이트 모드"
+                  />
+                </div>
+
                 {/* Right: Manager Call Button */}
                 <Button
-                  variant="outline"
+                  variant={theme === 'dark' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setManagerCallModalOpen(true)}
-                  className="flex-shrink-0"
+                  className={`flex-shrink-0 ${
+                    theme === 'dark'
+                      ? 'bg-[#21262d] hover:bg-[#30363d] text-white border-[#30363d]'
+                      : theme === 'white'
+                      ? 'border-gray-300'
+                      : ''
+                  }`}
                 >
-                  매니저호출
+                  🚨 매니저호출
                 </Button>
               </div>
             </CardHeader>
@@ -632,8 +718,8 @@ export default function LiveScreenPage({ params }: PageProps) {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto w-full px-3 md:px-4 flex-1 flex flex-col min-h-0 mb-[88px]">
         {activeView === 'timer' && (
-          <div className="h-full flex flex-col overflow-hidden">
-            <SubjectTimer studentId={studentId} containerRef={containerRef} />
+          <div className="h-full flex flex-col">
+            <SubjectTimer studentId={studentId} containerRef={containerRef} theme={theme} />
           </div>
         )}
 
@@ -642,6 +728,7 @@ export default function LiveScreenPage({ params }: PageProps) {
             studentId={studentId}
             seatNumber={parseInt(seatNumber)}
             existingPlanner={dailyPlanner || undefined}
+            containerRef={containerRef}
             onSave={(planner) => {
               setDailyPlanner(planner)
               setActiveView('planner')
@@ -734,14 +821,20 @@ export default function LiveScreenPage({ params }: PageProps) {
       </div>
 
       {/* Bottom Navigation - Fixed */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg z-40">
+      <div className={`fixed bottom-0 left-0 right-0 border-t shadow-lg z-40 ${
+        theme === 'dark'
+          ? 'bg-[#161b22] border-[#30363d]'
+          : 'bg-background border-gray-200'
+      }`}>
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-6 gap-1 p-2">
             {/* Timer */}
             <Button
               variant={activeView === 'timer' ? 'default' : 'ghost'}
               onClick={() => setActiveView('timer')}
-              className="h-16 flex flex-col gap-1"
+              className={`h-16 flex flex-col gap-1 ${
+                theme === 'dark' && activeView !== 'timer' ? 'text-[#c9d1d9] hover:text-white hover:bg-[#21262d]' : ''
+              }`}
             >
               <Clock className="h-5 w-5" />
               <span className="text-xs">타이머</span>
@@ -757,12 +850,19 @@ export default function LiveScreenPage({ params }: PageProps) {
                   setActiveView('planner')
                 }
               }}
-              className="h-16 flex flex-col gap-1 relative"
+              className={`h-16 flex flex-col gap-1 relative ${
+                theme === 'dark' && activeView !== 'planner' && activeView !== 'planner-edit' ? 'text-[#c9d1d9] hover:text-white hover:bg-[#21262d]' : ''
+              }`}
             >
               <FileText className="h-5 w-5" />
               <span className="text-xs">플래너</span>
               {dailyPlanner && (
-                <Badge variant="secondary" className="absolute top-1 right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                <Badge
+                  variant="secondary"
+                  className={`absolute top-1 right-1 h-5 w-5 p-0 flex items-center justify-center text-xs ${
+                    theme === 'dark' ? 'bg-[#21262d] text-[#c9d1d9] border border-[#30363d]' : ''
+                  }`}
+                >
                   {dailyPlanner.study_plans.filter(p => p.completed).length}
                 </Badge>
               )}
@@ -773,7 +873,9 @@ export default function LiveScreenPage({ params }: PageProps) {
               <Button
                 variant="ghost"
                 onClick={() => setIsOutingModalOpen(true)}
-                className="h-16 flex flex-col gap-1"
+                className={`h-16 flex flex-col gap-1 ${
+                  theme === 'dark' ? 'text-[#c9d1d9] hover:text-white hover:bg-[#21262d]' : ''
+                }`}
               >
                 <DoorOpen className="h-5 w-5" />
                 <span className="text-xs">외출</span>
@@ -794,11 +896,18 @@ export default function LiveScreenPage({ params }: PageProps) {
               <Button
                 variant="ghost"
                 onClick={handleSleepStart}
-                className="h-16 flex flex-col gap-1 relative"
+                className={`h-16 flex flex-col gap-1 relative ${
+                  theme === 'dark' ? 'text-[#c9d1d9] hover:text-white hover:bg-[#21262d]' : ''
+                }`}
               >
                 <Moon className="h-5 w-5" />
                 <span className="text-xs">잠자기</span>
-                <Badge variant="secondary" className="absolute top-1 right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                <Badge
+                  variant="secondary"
+                  className={`absolute top-1 right-1 h-5 w-5 p-0 flex items-center justify-center text-xs ${
+                    theme === 'dark' ? 'bg-[#21262d] text-[#c9d1d9] border border-[#30363d]' : ''
+                  }`}
+                >
                   {screenState.sleep_count}
                 </Badge>
               </Button>
@@ -819,7 +928,9 @@ export default function LiveScreenPage({ params }: PageProps) {
             <Button
               variant={activeView === 'ranking' ? 'default' : 'ghost'}
               onClick={() => setActiveView('ranking')}
-              className="h-16 flex flex-col gap-1"
+              className={`h-16 flex flex-col gap-1 ${
+                theme === 'dark' && activeView !== 'ranking' ? 'text-[#c9d1d9] hover:text-white hover:bg-[#21262d]' : ''
+              }`}
             >
               <Trophy className="h-5 w-5" />
               <span className="text-xs">랭킹</span>
@@ -829,7 +940,9 @@ export default function LiveScreenPage({ params }: PageProps) {
             <Button
               variant={activeView === 'stats' ? 'default' : 'ghost'}
               onClick={() => setActiveView('stats')}
-              className="h-16 flex flex-col gap-1"
+              className={`h-16 flex flex-col gap-1 ${
+                theme === 'dark' && activeView !== 'stats' ? 'text-[#c9d1d9] hover:text-white hover:bg-[#21262d]' : ''
+              }`}
             >
               <BarChart3 className="h-5 w-5" />
               <span className="text-xs">통계</span>

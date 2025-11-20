@@ -32,6 +32,7 @@ yarn-error.log*
 # env files (sensitive)
 .env
 .env*.local
+.env.development
 .env.production
 
 # vercel
@@ -83,3 +84,4 @@ logs
 # Cache
 .cache/
 .parcel-cache/
+workers/api/.dev.vars

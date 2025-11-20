@@ -192,7 +192,7 @@ const mockKakaoTalkUsages: KakaoTalkUsage[] = [
 
 // Mock Service Usage Data
 const mockServiceUsages: ServiceUsage[] = [
-  { id: 'su1', date: '2025-01-01', type: '서버비', description: 'ClassFlow 서버 이용료 (월간)', cost: 50000 },
+  { id: 'su1', date: '2025-01-01', type: '서버비', description: 'GoldPen 서버 이용료 (월간)', cost: 50000 },
 ]
 
 export default function SettingsPage() {
@@ -262,7 +262,7 @@ export default function SettingsPage() {
   // Load accounts and menu settings on mount
   useEffect(() => {
     // Set institution name (hardcoded for now)
-    setInstitutionName('classflow')
+    setInstitutionName('goldpen')
 
     const loadedAccounts = accountManager.getAccounts()
     setAccounts(loadedAccounts)

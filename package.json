@@ -1,11 +1,11 @@
 {
-  "name": "classflow-os",
+  "name": "goldpen",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev -p 8000",
     "build": "next build",
-    "pages:build": "npx @cloudflare/next-on-pages",
+    "pages:build": "rm -rf .next .vercel/output && npx @cloudflare/next-on-pages && node scripts/patch-open-next-worker.mjs",
     "preview": "npm run pages:build && wrangler pages dev",
     "deploy": "npm run pages:build && wrangler pages deploy",
     "start": "next start",
@@ -14,7 +14,11 @@
     "test": "vitest",
     "test:e2e": "playwright test",
     "db:migrate": "supabase migration up",
-    "db:reset": "supabase db reset"
+    "db:reset": "supabase db reset",
+    "api:dev": "pnpm --filter @goldpen/workers-api dev",
+    "api:deploy": "pnpm --filter @goldpen/workers-api deploy",
+    "api:tail": "pnpm --filter @goldpen/workers-api tail",
+    "deploy:all": "pnpm api:deploy && pnpm deploy"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

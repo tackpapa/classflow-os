@@ -1,4 +1,4 @@
-# ARCHITECTURE.md - ClassFlow OS 시스템 아키텍처
+# ARCHITECTURE.md - GoldPen 시스템 아키텍처
 
 > **학원/러닝센터/스터디카페 통합 운영 시스템**
 > 멀티테넌트 SaaS 아키텍처

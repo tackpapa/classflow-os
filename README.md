@@ -1,4 +1,4 @@
-# ClassFlow OS
+# GoldPen
 
 > 학원/러닝센터/스터디카페 통합 운영 시스템
 
@@ -35,7 +35,7 @@ pnpm dev
 ## 📁 프로젝트 구조
 
 ```
-zatam/
+goldpen/
 ├── app/              # Next.js App Router
 ├── components/       # React 컴포넌트
 ├── lib/              # 유틸리티 & 핵심 로직
@@ -138,4 +138,4 @@ Proprietary - All rights reserved
 
 ---
 
-**Made with ❤️ by ClassFlow Team**
+**Made with ❤️ by GoldPen Team**

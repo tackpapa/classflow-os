@@ -1,4 +1,4 @@
-# CLAUDE.md - ClassFlow OS 프로젝트 규칙
+# CLAUDE.md - GoldPen 프로젝트 규칙
 
 > **학원/러닝센터/스터디카페 통합 운영 시스템**
 > Next.js 15 + Cloudflare Workers + Supabase
@@ -7,7 +7,7 @@
 
 ## 📌 프로젝트 개요
 
-**프로젝트명**: ClassFlow OS
+**프로젝트명**: GoldPen
 **목적**: 사교육 기관의 상담-등록-수업-출결-성적-정산 전체 워크플로우 자동화
 **타겟**: 학원, 러닝센터, 스터디카페, 공부방
 
@@ -61,7 +61,7 @@ export async function GET(request: Request) {
 
    # wrangler.toml에 공개 변수만
    [vars]
-   NEXT_PUBLIC_APP_URL = "https://classflow.pages.dev"
+   NEXT_PUBLIC_APP_URL = "https://goldpen.kr"
    ```
 
 5. **데이터베이스 연결**
@@ -121,7 +121,7 @@ Messaging:
 ## 📁 프로젝트 구조
 
 ```
-zatam/
+goldpen/
 ├── app/                      # Next.js App Router
 │   ├── (auth)/              # 인증 관련 라우트 그룹
 │   ├── (dashboard)/         # 대시보드 (운영자/강사)
@@ -373,8 +373,8 @@ test('상담 신청부터 등록까지 플로우', async ({ page }) => {
 ### 환경 구분
 ```yaml
 Development: localhost:3000
-Staging: staging.classflow.dev (Cloudflare Pages)
-Production: classflow.dev (Cloudflare Pages)
+Staging: staging.goldpen.kr (Cloudflare Pages)
+Production: goldpen.kr (Cloudflare Pages)
 ```
 
 ### CI/CD 파이프라인

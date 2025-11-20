@@ -14,7 +14,7 @@ import {
 
 // Mock organization data (in real app, fetch from Supabase)
 const mockOrganization = {
-  name: 'ClassFlow 학원',
+  name: 'GoldPen 학원',
   logo_url: '/logo.png', // placeholder
 }
 
@@ -65,7 +65,30 @@ export default function LiveAttendancePage() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(navigator.userAgent)
   }
 
-  // Auto-enter fullscreen every 5 seconds if not in fullscreen (Mobile/Tablet only, excluding iOS)
+  // 3초마다 풀스크린 상태 체크해서 모달 표시 (iOS만)
+  useEffect(() => {
+    if (!isIOSDevice) return
+
+    const checkFullscreenStatus = () => {
+      const isInFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).webkitCurrentFullScreenElement
+      )
+
+      // 풀스크린이 아니면 모달 표시
+      if (!isInFullscreen) {
+        setFullscreenPromptOpen(true)
+      }
+    }
+
+    // 3초마다 체크
+    const interval = setInterval(checkFullscreenStatus, 3000)
+
+    return () => clearInterval(interval)
+  }, [isIOSDevice])
+
+  // Auto-enter fullscreen every 2 seconds if not in fullscreen (Mobile/Tablet only, excluding iOS)
   useEffect(() => {
     // iOS/iPad는 모달로 처리하므로 자동 진입 건너뜀
     if (isIOSDevice) return
@@ -87,15 +110,49 @@ export default function LiveAttendancePage() {
             await element.requestFullscreen()
           }
         } catch (error) {
-          // Silently fail
+          // Silently fail - requires user interaction
         }
       }
     }
 
     checkAndEnterFullscreen()
-    const interval = setInterval(checkAndEnterFullscreen, 5000)
+    const interval = setInterval(checkAndEnterFullscreen, 2000)
 
     return () => clearInterval(interval)
+  }, [isIOSDevice])
+
+  // 🚀 사용자 터치/클릭 시 풀스크린 재진입 시도 (Mobile/Tablet only)
+  useEffect(() => {
+    if (isIOSDevice || !isMobileOrTablet()) return
+
+    const handleUserInteraction = async () => {
+      const isInFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).webkitCurrentFullScreenElement
+      )
+
+      // 풀스크린이 아닐 때만 재진입 시도
+      if (!isInFullscreen && containerRef.current) {
+        try {
+          const element = containerRef.current as any
+          if (typeof element.requestFullscreen === 'function') {
+            await element.requestFullscreen()
+          }
+        } catch (error) {
+          // Silently fail
+        }
+      }
+    }
+
+    // 터치와 클릭 이벤트 모두 감지
+    document.addEventListener('touchstart', handleUserInteraction, { passive: true })
+    document.addEventListener('click', handleUserInteraction)
+
+    return () => {
+      document.removeEventListener('touchstart', handleUserInteraction)
+      document.removeEventListener('click', handleUserInteraction)
+    }
   }, [isIOSDevice])
 
   // Fullscreen state tracking (webkit 지원)
@@ -165,7 +222,11 @@ export default function LiveAttendancePage() {
   }
 
   // Handle fullscreen prompt (iOS/iPad only)
-  const handleEnterFullscreenFromPrompt = async () => {
+  const handleEnterFullscreenFromPrompt = async (e?: React.MouseEvent | React.TouchEvent) => {
+    if (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
     setFullscreenPromptOpen(false)
     await handleEnterFullscreen()
   }
@@ -368,25 +429,23 @@ export default function LiveAttendancePage() {
   return (
     <div ref={containerRef} className="h-screen flex bg-white overflow-hidden">
       {/* Fullscreen Prompt Modal */}
-      <Dialog open={fullscreenPromptOpen} onOpenChange={setFullscreenPromptOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader className="text-center pb-4">
-            <DialogTitle className="text-2xl">풀스크린 모드</DialogTitle>
-            <DialogDescription className="text-base pt-2">
-              최적의 학습 환경을 위해 풀스크린 모드를 켜주세요
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-center pt-4">
-            <Button
-              size="lg"
-              onClick={handleEnterFullscreenFromPrompt}
-              className="w-full h-16 text-lg font-semibold"
-            >
-              풀스크린 켜기
-            </Button>
+      {fullscreenPromptOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center cursor-pointer"
+          onClick={(e) => handleEnterFullscreenFromPrompt(e)}
+          onTouchEnd={(e) => handleEnterFullscreenFromPrompt(e)}
+        >
+          <div className="text-center space-y-4 px-8 pointer-events-none">
+            <h2 className="text-3xl md:text-4xl font-bold text-white">풀스크린 모드</h2>
+            <p className="text-lg md:text-xl text-white/80">
+              최적의 학습 환경을 위해<br />화면을 터치해주세요
+            </p>
+            <p className="text-sm text-white/60 pt-4">
+              👆 화면 아무 곳이나 터치
+            </p>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
       {/* Left Panel - Blue Background */}
       <div className="w-1/2 flex flex-col items-center justify-center p-16 bg-gradient-to-br from-blue-500 to-blue-600 text-white relative overflow-hidden">

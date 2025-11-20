@@ -54,9 +54,10 @@ export type WidgetCategory =
 export type WidgetSize = 'small' | 'medium' | 'large' | 'full'
 
 // 위젯 크기 매핑 (Tailwind grid classes)
+// grid-cols-1 md:grid-cols-2 lg:grid-cols-3 기준
 export const widgetSizeClasses: Record<WidgetSize, string> = {
-  small: 'col-span-12 md:col-span-6 lg:col-span-3',    // 1/4
-  medium: 'col-span-12 md:col-span-6 lg:col-span-6',   // 1/2
-  large: 'col-span-12 md:col-span-12 lg:col-span-9',   // 3/4
-  full: 'col-span-12',                                 // 전체
+  small: 'col-span-1',                    // 한 줄에 3개 (lg), 2개 (md), 1개 (모바일)
+  medium: 'col-span-1',                   // 한 줄에 3개 (lg), 2개 (md), 1개 (모바일)
+  large: 'col-span-1 md:col-span-2',      // 한 줄에 2개 차지
+  full: 'col-span-1 md:col-span-2 lg:col-span-3',  // 전체 너비
 }

@@ -1,4 +1,4 @@
-# TASKS.md - ClassFlow OS 작업 로그
+# TASKS.md - GoldPen 작업 로그
 
 > **프로젝트 작업 히스토리 및 진행 상황**
 

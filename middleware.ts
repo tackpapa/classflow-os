@@ -92,7 +92,7 @@ export async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/login') ||
       request.nextUrl.pathname.startsWith('/signup')) {
     if (user) {
-      return NextResponse.redirect(new URL('/classflow/overview', request.url))
+      return NextResponse.redirect(new URL('/goldpen/overview', request.url))
     }
   }
 

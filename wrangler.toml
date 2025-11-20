@@ -1,3 +1,14 @@
-name = "classflow-os"
-compatibility_flags = ["nodejs_compat"]
-compatibility_date = "2025-01-15"
+#:schema node_modules/wrangler/config-schema.json
+name = "goldpen"
+compatibility_date = "2024-11-19"
+pages_build_output_dir = ".vercel/output/static"
+
+# Cloudflare Pages configuration for Next.js
+# See: https://developers.cloudflare.com/pages/framework-guides/deploy-a-nextjs-site/
+
+[env.production]
+# Production environment variables
+# Set these in Cloudflare Pages dashboard: Settings > Environment Variables
+
+# Note: Environment variables should be set in the Cloudflare Pages dashboard
+# This file is for configuration only, not secrets

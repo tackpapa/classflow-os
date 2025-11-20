@@ -560,7 +560,7 @@ export default function SeatsPage() {
 
   // URL copy state
   const [urlCopied, setUrlCopied] = useState(false)
-  const [liveScreenUrl, setLiveScreenUrl] = useState('/classflow/livescreen/1')
+  const [liveScreenUrl, setLiveScreenUrl] = useState('/goldpen/livescreen/1')
 
   // Filter students by search query
   const filteredStudents = mockStudents.filter(student =>
@@ -796,7 +796,7 @@ export default function SeatsPage() {
   // Set liveScreenUrl on mount (client-side only)
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setLiveScreenUrl(`${window.location.origin}/classflow/livescreen/1`)
+      setLiveScreenUrl(`${window.location.origin}/goldpen/livescreen/1`)
     }
   }, [])
 

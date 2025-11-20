@@ -29,7 +29,7 @@ export interface NavigationItem {
 }
 
 // Default institution name
-const DEFAULT_INSTITUTION = 'classflow'
+const DEFAULT_INSTITUTION = 'goldpen'
 
 // Helper function to get institution name from URL or use default
 export function getInstitutionName(): string {

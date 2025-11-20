@@ -1,0 +1,38 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "goldpen-api"
+main = "src/index.ts"
+compatibility_date = "2024-11-19"
+workers_dev = true
+
+# Observability
+[observability]
+enabled = true
+
+# Development
+[dev]
+port = 8787
+local_protocol = "http"
+
+# Environment Variables
+[vars]
+# Public variables (non-sensitive)
+# NEXT_PUBLIC_APP_URL will be set here
+
+# Secrets (set via CLI):
+# wrangler secret put NEXT_PUBLIC_SUPABASE_URL
+# wrangler secret put NEXT_PUBLIC_SUPABASE_ANON_KEY
+# wrangler secret put SUPABASE_SERVICE_ROLE_KEY (optional, for admin operations)
+
+# Production Environment
+[env.production]
+name = "goldpen-api-production"
+workers_dev = false
+
+# Staging Environment
+[env.staging]
+name = "goldpen-api-staging"
+workers_dev = false
+
+# Limits (adjust based on needs)
+# [limits]
+# cpu_ms = 50

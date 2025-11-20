@@ -9,7 +9,7 @@
 ```
 
 예시:
-- `/classflow/livescreen/1` - 지점명: classflow, 좌석번호: 1번
+- `/goldpen/livescreen/1` - 지점명: goldpen, 좌석번호: 1번
 - `/gangnam/livescreen/25` - 지점명: gangnam, 좌석번호: 25번
 
 ## 주요 기능
@@ -98,7 +98,7 @@ Tailwind breakpoints:
 
 ```typescript
 // 라이브 스크린 페이지로 이동
-router.push('/classflow/livescreen/1')
+router.push('/goldpen/livescreen/1')
 
 // 학생 ID와 좌석 번호는 페이지에서 자동으로 가져옴
 // 향후 인증 시스템과 연동하여 자동 인식
@@ -118,7 +118,7 @@ router.push('/classflow/livescreen/1')
 
 현재는 URL에 직접 접근하여 사용:
 ```
-http://localhost:3000/classflow/livescreen/1
+http://localhost:3000/goldpen/livescreen/1
 ```
 
 향후 독서실관리 페이지에서 각 좌석 카드에 "라이브 스크린" 버튼 추가 예정.

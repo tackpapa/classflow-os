@@ -3,15 +3,42 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
-import { Widget, widgetSizeClasses } from '@/lib/types/widget'
+import { Widget } from '@/lib/types/widget'
 import { getEnabledWidgets, saveWidgetsConfig, getWidgetsConfig } from '@/lib/config/widgets'
-import { WidgetRenderer } from '@/components/dashboard/WidgetRenderer'
 import { WidgetManager } from '@/components/dashboard/WidgetManager'
+import { DraggableWidget } from '@/components/dashboard/DraggableWidget'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable'
 
 export default function OverviewPage() {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [widgets, setWidgets] = useState<Widget[]>([])
   const [widgetManagerOpen, setWidgetManagerOpen] = useState(false)
+
+  // 드래그 센서 설정
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px 이상 드래그해야 활성화 (클릭과 구분)
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
   // 위젯 설정 로드
   useEffect(() => {
@@ -25,6 +52,36 @@ export default function OverviewPage() {
     }, 1000)
     return () => clearInterval(timer)
   }, [])
+
+  // 드래그 종료 핸들러
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      setWidgets((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id)
+        const newIndex = items.findIndex((item) => item.id === over.id)
+
+        const newItems = arrayMove(items, oldIndex, newIndex)
+
+        // order 값 업데이트
+        const updatedItems = newItems.map((item, index) => ({
+          ...item,
+          order: index,
+        }))
+
+        // LocalStorage에 저장
+        const allWidgets = getWidgetsConfig()
+        const updatedConfig = allWidgets.map((widget) => {
+          const updated = updatedItems.find((w) => w.id === widget.id)
+          return updated || widget
+        })
+        saveWidgetsConfig(updatedConfig)
+
+        return updatedItems
+      })
+    }
+  }
 
   // 위젯 삭제
   const handleRemoveWidget = (widgetId: string) => {
@@ -81,19 +138,29 @@ export default function OverviewPage() {
         </div>
       )}
 
-      {/* Widgets Grid */}
+      {/* Widgets Grid with Drag & Drop */}
       {widgets.length > 0 && (
-        <div className="grid grid-cols-12 gap-4">
-          {widgets.map((widget) => (
-            <div key={widget.id} className={widgetSizeClasses[widget.size]}>
-              <WidgetRenderer
-                widget={widget}
-                onRemove={() => handleRemoveWidget(widget.id)}
-                currentTime={currentTime}
-              />
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={widgets.map((w) => w.id)}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {widgets.map((widget) => (
+                <DraggableWidget
+                  key={widget.id}
+                  widget={widget}
+                  onRemove={() => handleRemoveWidget(widget.id)}
+                  currentTime={currentTime}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Widget Manager Modal */}

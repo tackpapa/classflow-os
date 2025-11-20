@@ -3,7 +3,7 @@ export default function HomePage() {
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
       <div className="text-center">
         <h1 className="text-4xl font-bold mb-4">
-          ClassFlow OS
+          GoldPen
         </h1>
         <p className="text-xl text-muted-foreground mb-8">
           학원/러닝센터/스터디카페 통합 운영 시스템

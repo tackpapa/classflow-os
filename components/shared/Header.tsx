@@ -88,7 +88,7 @@ export function Header() {
             <div className="flex h-7 w-7 md:h-8 md:w-8 items-center justify-center rounded-md bg-primary">
               <span className="text-base md:text-lg font-bold text-primary-foreground">C</span>
             </div>
-            <h1 className="text-lg md:text-xl font-bold hidden sm:block">ClassFlow OS</h1>
+            <h1 className="text-lg md:text-xl font-bold hidden sm:block">GoldPen</h1>
           </div>
 
           {/* 역할별 인사말 */}
@@ -112,7 +112,7 @@ export function Header() {
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">사용자</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  user@classflow.dev
+                  user@goldpen.kr
                 </p>
               </div>
             </DropdownMenuLabel>

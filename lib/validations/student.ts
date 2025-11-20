@@ -1,7 +1,37 @@
 import { z } from 'zod'
 
 /**
- * 학생 생성/수정 스키마
+ * 학생 생성 스키마 (API용)
+ */
+export const createStudentSchema = z.object({
+  name: z.string().min(1, '이름은 필수입니다').max(100, '이름은 100자 이하여야 합니다'),
+  grade: z.string().optional(),
+  phone: z.string().optional(),
+  parent_phone: z.string().optional(),
+  notes: z.string().optional(),
+  status: z.enum(['active', 'inactive', 'graduated']).default('active'),
+})
+
+/**
+ * 학생 수정 스키마 (API용 - 모든 필드 선택적)
+ */
+export const updateStudentSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  grade: z.string().optional(),
+  phone: z.string().optional(),
+  parent_phone: z.string().optional(),
+  notes: z.string().optional(),
+  status: z.enum(['active', 'inactive', 'graduated']).optional(),
+})
+
+/**
+ * 학생 타입 정의
+ */
+export type CreateStudentInput = z.infer<typeof createStudentSchema>
+export type UpdateStudentInput = z.infer<typeof updateStudentSchema>
+
+/**
+ * 레거시 스키마 (기존 프론트엔드용 - 호환성 유지)
  */
 export const StudentSchema = z.object({
   name: z.string().min(1, '이름을 입력해주세요'),

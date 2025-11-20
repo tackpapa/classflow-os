@@ -32,8 +32,8 @@ export const availableWidgets: Widget[] = [
     description: '학년별 학생 수 차트',
     category: '학생관리',
     size: 'medium',
-    enabled: false,
-    order: 100,
+    enabled: true,
+    order: 8,
   },
 
   // 상담 관리
@@ -54,8 +54,8 @@ export const availableWidgets: Widget[] = [
     description: '오늘/내일 상담 일정',
     category: '상담관리',
     size: 'medium',
-    enabled: false,
-    order: 101,
+    enabled: true,
+    order: 9,
   },
   {
     id: 'consultations-conversion',
@@ -64,8 +64,8 @@ export const availableWidgets: Widget[] = [
     description: '상담→입교 전환율 차트',
     category: '상담관리',
     size: 'medium',
-    enabled: false,
-    order: 102,
+    enabled: true,
+    order: 10,
   },
 
   // 수업 관리
@@ -76,8 +76,8 @@ export const availableWidgets: Widget[] = [
     description: '총 반/평균 충원율',
     category: '수업관리',
     size: 'small',
-    enabled: false,
-    order: 103,
+    enabled: true,
+    order: 11,
   },
   {
     id: 'classes-capacity',
@@ -86,8 +86,8 @@ export const availableWidgets: Widget[] = [
     description: '반별 충원율 차트',
     category: '수업관리',
     size: 'medium',
-    enabled: false,
-    order: 104,
+    enabled: true,
+    order: 12,
   },
 
   // 시험 관리
@@ -98,8 +98,8 @@ export const availableWidgets: Widget[] = [
     description: '채점 완료/대기 통계',
     category: '수업관리',
     size: 'small',
-    enabled: false,
-    order: 105,
+    enabled: true,
+    order: 13,
   },
   {
     id: 'exams-recent',
@@ -108,8 +108,8 @@ export const availableWidgets: Widget[] = [
     description: '평균 성적 및 추이',
     category: '수업관리',
     size: 'medium',
-    enabled: false,
-    order: 106,
+    enabled: true,
+    order: 14,
   },
 
   // 과제 관리
@@ -120,8 +120,8 @@ export const availableWidgets: Widget[] = [
     description: '진행 중/완료 과제',
     category: '수업관리',
     size: 'small',
-    enabled: false,
-    order: 107,
+    enabled: true,
+    order: 15,
   },
   {
     id: 'homework-submission',
@@ -130,8 +130,8 @@ export const availableWidgets: Widget[] = [
     description: '학생별 제출률 차트',
     category: '수업관리',
     size: 'medium',
-    enabled: false,
-    order: 108,
+    enabled: true,
+    order: 16,
   },
 
   // 재무 관리
@@ -162,8 +162,8 @@ export const availableWidgets: Widget[] = [
     description: '카테고리별 지출 분포',
     category: '재무관리',
     size: 'medium',
-    enabled: false,
-    order: 109,
+    enabled: true,
+    order: 17,
   },
 
   // 출결 관리
@@ -174,8 +174,8 @@ export const availableWidgets: Widget[] = [
     description: '출석/지각/결석',
     category: '출결관리',
     size: 'small',
-    enabled: false,
-    order: 110,
+    enabled: true,
+    order: 18,
   },
   {
     id: 'attendance-weekly',
@@ -194,8 +194,8 @@ export const availableWidgets: Widget[] = [
     description: '연속 결석/출결률 낮은 학생',
     category: '출결관리',
     size: 'medium',
-    enabled: false,
-    order: 111,
+    enabled: true,
+    order: 19,
   },
 
   // 수업일지
@@ -206,8 +206,8 @@ export const availableWidgets: Widget[] = [
     description: '이번 달 수업 통계',
     category: '수업관리',
     size: 'small',
-    enabled: false,
-    order: 112,
+    enabled: true,
+    order: 20,
   },
   {
     id: 'lessons-recent',
@@ -216,8 +216,8 @@ export const availableWidgets: Widget[] = [
     description: '최근 작성된 수업일지',
     category: '수업관리',
     size: 'medium',
-    enabled: false,
-    order: 113,
+    enabled: true,
+    order: 21,
   },
 
   // 강사 관리
@@ -228,8 +228,8 @@ export const availableWidgets: Widget[] = [
     description: '재직 강사/담당 학생',
     category: '수업관리',
     size: 'small',
-    enabled: false,
-    order: 114,
+    enabled: true,
+    order: 22,
   },
 
   // 스케줄
@@ -240,8 +240,8 @@ export const availableWidgets: Widget[] = [
     description: '오늘 예정된 수업',
     category: '수업관리',
     size: 'medium',
-    enabled: false,
-    order: 115,
+    enabled: true,
+    order: 23,
   },
 
   // 시설 관리
@@ -252,8 +252,8 @@ export const availableWidgets: Widget[] = [
     description: '강의실별 사용 현황',
     category: '시설관리',
     size: 'medium',
-    enabled: false,
-    order: 116,
+    enabled: true,
+    order: 24,
   },
   {
     id: 'seats-realtime',
@@ -262,8 +262,8 @@ export const availableWidgets: Widget[] = [
     description: '실시간 좌석 현황',
     category: '시설관리',
     size: 'small',
-    enabled: false,
-    order: 117,
+    enabled: true,
+    order: 25,
   },
 
   // 지출 관리
@@ -274,8 +274,8 @@ export const availableWidgets: Widget[] = [
     description: '이번 달 총 지출',
     category: '재무관리',
     size: 'small',
-    enabled: false,
-    order: 118,
+    enabled: true,
+    order: 26,
   },
   {
     id: 'expenses-trend',
@@ -284,8 +284,8 @@ export const availableWidgets: Widget[] = [
     description: '월별 지출 변화',
     category: '재무관리',
     size: 'medium',
-    enabled: false,
-    order: 119,
+    enabled: true,
+    order: 27,
   },
 
   // 기타
@@ -316,10 +316,10 @@ export const defaultEnabledWidgetIds = availableWidgets
   .filter((w) => w.enabled)
   .map((w) => w.id)
 
-// LocalStorage 키
-export const WIDGETS_STORAGE_KEY = 'dashboard-widgets-config'
+// LocalStorage 키 (v3로 변경하여 캐시 초기화)
+export const WIDGETS_STORAGE_KEY = 'dashboard-widgets-config-v3'
 
-// 위젯 설정 가져오기
+// 위젯 설정 가져오기 (Smart Config Merging)
 export function getWidgetsConfig(): Widget[] {
   if (typeof window === 'undefined') return availableWidgets
 
@@ -327,13 +327,21 @@ export function getWidgetsConfig(): Widget[] {
     const stored = localStorage.getItem(WIDGETS_STORAGE_KEY)
     if (!stored) return availableWidgets
 
-    const config = JSON.parse(stored) as Widget[]
+    const savedConfig = JSON.parse(stored) as Widget[]
 
-    // 새로운 위젯이 추가되었을 경우 병합
-    const configIds = new Set(config.map((w) => w.id))
-    const newWidgets = availableWidgets.filter((w) => !configIds.has(w.id))
-
-    return [...config, ...newWidgets].sort((a, b) => a.order - b.order)
+    // ✅ availableWidgets를 source of truth로 사용
+    // LocalStorage의 enabled/order만 적용 (size, type 등은 코드에서 가져옴)
+    return availableWidgets.map((widget) => {
+      const saved = savedConfig.find((w) => w.id === widget.id)
+      if (saved) {
+        return {
+          ...widget,  // availableWidgets의 최신 정보 사용
+          enabled: saved.enabled,  // 사용자 설정만 유지
+          order: saved.order,
+        }
+      }
+      return widget
+    }).sort((a, b) => a.order - b.order)
   } catch (error) {
     console.error('Failed to load widgets config:', error)
     return availableWidgets

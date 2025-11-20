@@ -1,4 +1,4 @@
-# ClassFlow OS 백엔드 구축 계획서
+# GoldPen 백엔드 구축 계획서
 
 **작성일**: 2025-11-18
 **목표**: 학원 관리 시스템의 백엔드 API 및 비즈니스 로직 구현
@@ -594,7 +594,7 @@ curl -X POST http://localhost:8000/api/auth/login \
 ## 📚 디렉토리 구조
 
 ```
-classflow-os/
+goldpen/
 ├── app/
 │   └── api/                    # API Routes
 │       ├── auth/

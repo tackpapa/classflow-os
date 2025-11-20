@@ -4,7 +4,7 @@ import { getInstitutionName } from '@/lib/config/navigation'
  * Get href with institution prefix
  * @param path - The path without institution name (e.g., '/students')
  * @param institutionName - Optional institution name override
- * @returns Full path with institution prefix (e.g., '/classflow/students')
+ * @returns Full path with institution prefix (e.g., '/goldpen/students')
  */
 export function getInstitutionHref(path: string, institutionName?: string): string {
   const institution = institutionName || getInstitutionName()

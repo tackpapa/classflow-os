@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { createClient } from '@/lib/supabase/client'
+// BFF API를 사용하므로 Supabase Client는 더 이상 필요 없음
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,8 +16,9 @@ import { Loader2 } from 'lucide-react'
 
 const signupSchema = z.object({
   name: z.string().min(2, '이름은 최소 2자 이상이어야 합니다'),
+  org_name: z.string().min(1, '기관명을 입력해주세요'),
   email: z.string().email('올바른 이메일을 입력해주세요'),
-  password: z.string().min(6, '비밀번호는 최소 6자 이상이어야 합니다'),
+  password: z.string().min(8, '비밀번호는 최소 8자 이상이어야 합니다'),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: '비밀번호가 일치하지 않습니다',
@@ -30,7 +31,6 @@ export default function SignupPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
-  const supabase = createClient()
 
   const {
     register,
@@ -43,20 +43,25 @@ export default function SignupPage() {
   const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true)
     try {
-      const { error } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            name: data.name,
-          },
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          name: data.name,
+          org_name: data.org_name,
+        }),
       })
 
-      if (error) {
+      const result = await response.json()
+
+      if (!response.ok) {
         toast({
           title: '회원가입 실패',
-          description: error.message,
+          description: result.error || '회원가입 중 오류가 발생했습니다',
           variant: 'destructive',
         })
         return
@@ -64,10 +69,11 @@ export default function SignupPage() {
 
       toast({
         title: '회원가입 성공',
-        description: '이메일을 확인하여 인증을 완료해주세요.',
+        description: `${result.org.name}에 오신 것을 환영합니다!`,
       })
 
       router.push('/login')
+      router.refresh()
     } catch (error) {
       toast({
         title: '오류 발생',
@@ -89,7 +95,7 @@ export default function SignupPage() {
         </div>
         <CardTitle className="text-2xl text-center">회원가입</CardTitle>
         <CardDescription className="text-center">
-          ClassFlow OS 계정을 만드세요
+          GoldPen 계정을 만드세요
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -105,6 +111,19 @@ export default function SignupPage() {
             />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name.message}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="org_name">기관명</Label>
+            <Input
+              id="org_name"
+              type="text"
+              placeholder="예: 골드펜 학원"
+              {...register('org_name')}
+              disabled={isLoading}
+            />
+            {errors.org_name && (
+              <p className="text-sm text-destructive">{errors.org_name.message}</p>
             )}
           </div>
           <div className="space-y-2">

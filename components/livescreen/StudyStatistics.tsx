@@ -17,7 +17,10 @@ import {
   Star,
   CheckCircle2,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Sun,
+  Moon,
+  Coffee
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { Subject, SubjectStatistics } from '@/lib/types/database'
@@ -43,6 +46,13 @@ interface TimeSlotData {
   slot: string
   label: string
   totalSeconds: number
+  icon: typeof Sun
+}
+
+interface DayOfWeekStat {
+  day: string
+  seconds: number
+  count: number
 }
 
 interface Achievement {
@@ -57,11 +67,14 @@ interface Achievement {
 export function StudyStatistics({ studentId }: StudyStatisticsProps) {
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [todayStats, setTodayStats] = useState<SubjectStatistics[]>([])
+  const [yesterdayStats, setYesterdayStats] = useState<SubjectStatistics[]>([])
   const [weeklyData, setWeeklyData] = useState<DailyRecord[]>([])
+  const [monthlyData, setMonthlyData] = useState<DailyRecord[]>([])
   const [totalSeconds, setTotalSeconds] = useState(0)
-  const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month'>('today')
+  const [yesterdayTotal, setYesterdayTotal] = useState(0)
   const [streak, setStreak] = useState(0)
   const [maxStreak, setMaxStreak] = useState(0)
+  const [personalBest, setPersonalBest] = useState(0)
 
   useEffect(() => {
     loadData()
@@ -74,14 +87,27 @@ export function StudyStatistics({ studentId }: StudyStatisticsProps) {
       setSubjects(JSON.parse(savedSubjects))
     }
 
-    // Load today's statistics
     const today = new Date().toISOString().split('T')[0]
+
+    // Load today's statistics
     const savedStats = localStorage.getItem(`subject-stats-${studentId}-${today}`)
     if (savedStats) {
       const stats = JSON.parse(savedStats)
       setTodayStats(stats)
       const total = stats.reduce((sum: number, stat: SubjectStatistics) => sum + stat.total_seconds, 0)
       setTotalSeconds(total)
+    }
+
+    // Load yesterday's statistics
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayStr = yesterday.toISOString().split('T')[0]
+    const savedYesterday = localStorage.getItem(`subject-stats-${studentId}-${yesterdayStr}`)
+    if (savedYesterday) {
+      const stats = JSON.parse(savedYesterday)
+      setYesterdayStats(stats)
+      const total = stats.reduce((sum: number, stat: SubjectStatistics) => sum + stat.total_seconds, 0)
+      setYesterdayTotal(total)
     }
 
     // Load weekly data (last 7 days)
@@ -109,6 +135,35 @@ export function StudyStatistics({ studentId }: StudyStatisticsProps) {
       }
     }
     setWeeklyData(weekData)
+
+    // Load monthly data (last 30 days) for averages
+    const monthData: DailyRecord[] = []
+    let maxDaily = 0
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      const dateStr = date.toISOString().split('T')[0]
+
+      const dayStats = localStorage.getItem(`subject-stats-${studentId}-${dateStr}`)
+      if (dayStats) {
+        const stats = JSON.parse(dayStats)
+        const total = stats.reduce((sum: number, stat: SubjectStatistics) => sum + stat.total_seconds, 0)
+        maxDaily = Math.max(maxDaily, total)
+        monthData.push({
+          date: dateStr,
+          totalSeconds: total,
+          subjects: stats
+        })
+      } else {
+        monthData.push({
+          date: dateStr,
+          totalSeconds: 0,
+          subjects: []
+        })
+      }
+    }
+    setMonthlyData(monthData)
+    setPersonalBest(maxDaily)
 
     // Calculate streak
     calculateStreak()
@@ -159,12 +214,33 @@ export function StudyStatistics({ studentId }: StudyStatisticsProps) {
     return `${minutes}분`
   }
 
+  const formatCompactTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    if (hours > 0) {
+      return `${hours}h${minutes > 0 ? ` ${minutes}m` : ''}`
+    }
+    return `${minutes}m`
+  }
+
   const getWeeklyComparison = (): WeeklyComparison => {
-    const thisWeekSeconds = weeklyData.slice(-7).reduce((sum, day) => sum + day.totalSeconds, 0)
-    const lastWeekSeconds = weeklyData.slice(-14, -7).reduce((sum, day) => sum + day.totalSeconds, 0) || 1
+    const thisWeekSeconds = weeklyData.reduce((sum, day) => sum + day.totalSeconds, 0)
+
+    // Get last week data
+    let lastWeekSeconds = 0
+    for (let i = 7; i < 14; i++) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      const dateStr = date.toISOString().split('T')[0]
+      const dayStats = localStorage.getItem(`subject-stats-${studentId}-${dateStr}`)
+      if (dayStats) {
+        const stats = JSON.parse(dayStats)
+        lastWeekSeconds += stats.reduce((sum: number, stat: SubjectStatistics) => sum + stat.total_seconds, 0)
+      }
+    }
 
     const change = thisWeekSeconds - lastWeekSeconds
-    const changePercent = ((change / lastWeekSeconds) * 100)
+    const changePercent = lastWeekSeconds > 0 ? ((change / lastWeekSeconds) * 100) : 0
 
     return {
       thisWeek: thisWeekSeconds,
@@ -175,58 +251,72 @@ export function StudyStatistics({ studentId }: StudyStatisticsProps) {
   }
 
   const getAverage7Days = () => {
-    const last7Days = weeklyData.slice(-7)
-    const total = last7Days.reduce((sum, day) => sum + day.totalSeconds, 0)
+    const total = weeklyData.reduce((sum, day) => sum + day.totalSeconds, 0)
     return Math.floor(total / 7)
   }
 
   const getAverage30Days = () => {
-    let total = 0
-    let count = 0
-
-    for (let i = 0; i < 30; i++) {
-      const date = new Date()
-      date.setDate(date.getDate() - i)
-      const dateStr = date.toISOString().split('T')[0]
-
-      const dayStats = localStorage.getItem(`subject-stats-${studentId}-${dateStr}`)
-      if (dayStats) {
-        const stats = JSON.parse(dayStats)
-        total += stats.reduce((sum: number, stat: SubjectStatistics) => sum + stat.total_seconds, 0)
-        count++
-      }
-    }
-
-    return count > 0 ? Math.floor(total / count) : 0
+    const daysWithData = monthlyData.filter(d => d.totalSeconds > 0)
+    if (daysWithData.length === 0) return 0
+    const total = monthlyData.reduce((sum, day) => sum + day.totalSeconds, 0)
+    return Math.floor(total / daysWithData.length)
   }
 
   const getTimeSlotData = (): TimeSlotData[] => {
     // Mock data for now - will be replaced with actual session data
+    const mockDistribution = [0.1, 0.15, 0.1, 0.2, 0.25, 0.2]
     return [
-      { slot: '06-09', label: '아침 (06-09시)', totalSeconds: totalSeconds * 0.1 },
-      { slot: '09-12', label: '오전 (09-12시)', totalSeconds: totalSeconds * 0.15 },
-      { slot: '12-15', label: '점심 (12-15시)', totalSeconds: totalSeconds * 0.1 },
-      { slot: '15-18', label: '오후 (15-18시)', totalSeconds: totalSeconds * 0.2 },
-      { slot: '18-21', label: '저녁 (18-21시)', totalSeconds: totalSeconds * 0.25 },
-      { slot: '21-24', label: '밤 (21-24시)', totalSeconds: totalSeconds * 0.2 },
+      { slot: '06-09', label: '아침', totalSeconds: totalSeconds * mockDistribution[0], icon: Sun },
+      { slot: '09-12', label: '오전', totalSeconds: totalSeconds * mockDistribution[1], icon: Coffee },
+      { slot: '12-15', label: '점심', totalSeconds: totalSeconds * mockDistribution[2], icon: Sun },
+      { slot: '15-18', label: '오후', totalSeconds: totalSeconds * mockDistribution[3], icon: Sun },
+      { slot: '18-21', label: '저녁', totalSeconds: totalSeconds * mockDistribution[4], icon: Sun },
+      { slot: '21-24', label: '밤', totalSeconds: totalSeconds * mockDistribution[5], icon: Moon },
     ]
   }
 
-  const getDayOfWeekData = () => {
-    const dayMap: { [key: string]: number } = {
-      '월': 0, '화': 0, '수': 0, '목': 0, '금': 0, '토': 0, '일': 0
+  const getDayOfWeekData = (): DayOfWeekStat[] => {
+    const dayMap: { [key: string]: { seconds: number, count: number } } = {
+      '월': { seconds: 0, count: 0 },
+      '화': { seconds: 0, count: 0 },
+      '수': { seconds: 0, count: 0 },
+      '목': { seconds: 0, count: 0 },
+      '금': { seconds: 0, count: 0 },
+      '토': { seconds: 0, count: 0 },
+      '일': { seconds: 0, count: 0 }
     }
 
-    weeklyData.forEach(day => {
-      const date = new Date(day.date)
+    // Collect last 4 weeks of data
+    for (let i = 0; i < 28; i++) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      const dateStr = date.toISOString().split('T')[0]
       const dayName = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()]
-      dayMap[dayName] += day.totalSeconds
-    })
 
-    return Object.entries(dayMap).map(([day, seconds]) => ({ day, seconds }))
+      const dayStats = localStorage.getItem(`subject-stats-${studentId}-${dateStr}`)
+      if (dayStats) {
+        const stats = JSON.parse(dayStats)
+        const total = stats.reduce((sum: number, stat: SubjectStatistics) => sum + stat.total_seconds, 0)
+        if (total > 0) {
+          dayMap[dayName].seconds += total
+          dayMap[dayName].count += 1
+        }
+      }
+    }
+
+    return Object.entries(dayMap).map(([day, data]) => ({
+      day,
+      seconds: data.count > 0 ? Math.floor(data.seconds / data.count) : 0,
+      count: data.count
+    }))
   }
 
   const getAchievements = (): Achievement[] => {
+    const mostStudiedSubject = todayStats.reduce((max, stat) =>
+      stat.total_seconds > (max?.total_seconds || 0) ? stat : max,
+      null as SubjectStatistics | null
+    )
+
     return [
       {
         id: '3h-club',
@@ -234,31 +324,27 @@ export function StudyStatistics({ studentId }: StudyStatisticsProps) {
         description: '하루 순공 3시간 달성',
         icon: 'trophy',
         unlocked: totalSeconds >= 3 * 3600,
-        date: totalSeconds >= 3 * 3600 ? new Date().toISOString() : undefined
       },
       {
         id: '7-day-streak',
-        title: '1주 연속 정주행',
+        title: '7일 연속',
         description: '7일 연속 공부',
         icon: 'flame',
         unlocked: streak >= 7,
-        date: streak >= 7 ? new Date().toISOString() : undefined
       },
       {
         id: '10h-subject',
-        title: '과목 마스터',
-        description: '특정 과목 10시간 달성',
+        title: '과목 10시간',
+        description: '특정 과목 주간 10시간 달성',
         icon: 'star',
-        unlocked: todayStats.some(s => s.total_seconds >= 10 * 3600),
-        date: todayStats.some(s => s.total_seconds >= 10 * 3600) ? new Date().toISOString() : undefined
+        unlocked: mostStudiedSubject ? mostStudiedSubject.total_seconds >= 10 * 3600 : false,
       },
       {
         id: 'perfect-week',
-        title: '완벽한 한 주',
+        title: '완벽한 주',
         description: '주간 목표 100% 달성',
         icon: 'target',
         unlocked: getWeeklyComparison().thisWeek >= 20 * 3600,
-        date: getWeeklyComparison().thisWeek >= 20 * 3600 ? new Date().toISOString() : undefined
       },
     ]
   }
@@ -277,188 +363,227 @@ export function StudyStatistics({ studentId }: StudyStatisticsProps) {
     )
   }
 
+  const getBestDayOfWeek = () => {
+    const days = getDayOfWeekData()
+    return days.reduce((prev, current) =>
+      prev.seconds > current.seconds ? prev : current
+    )
+  }
+
   const weeklyComparison = getWeeklyComparison()
   const avg7Days = getAverage7Days()
   const avg30Days = getAverage30Days()
   const mostStudied = getMostStudiedSubject()
   const bestTimeSlot = getBestTimeSlot()
+  const bestDay = getBestDayOfWeek()
   const achievements = getAchievements()
   const { hours: totalHours, minutes: totalMinutes } = formatTime(totalSeconds)
   const sortedStats = [...todayStats].sort((a, b) => b.total_seconds - a.total_seconds)
-  const maxSeconds = sortedStats.length > 0 ? sortedStats[0].total_seconds : 1
   const timeSlots = getTimeSlotData()
-  const maxTimeSlot = Math.max(...timeSlots.map(t => t.totalSeconds))
+  const maxTimeSlot = Math.max(...timeSlots.map(t => t.totalSeconds), 1)
   const dayOfWeekData = getDayOfWeekData()
-  const maxDaySeconds = Math.max(...dayOfWeekData.map(d => d.seconds))
+  const maxDaySeconds = Math.max(...dayOfWeekData.map(d => d.seconds), 1)
+  const yesterdayChange = totalSeconds - yesterdayTotal
+  const yesterdayChangePercent = yesterdayTotal > 0 ? ((yesterdayChange / yesterdayTotal) * 100) : 0
 
   return (
-    <div className="space-y-2.5 pb-4">
-      {/* 통합 Hero 카드 - 모든 핵심 데이터 포함 */}
+    <div className="space-y-4 pb-8">
+      {/* Hero 카드 - 오늘 통계 + 핵심 지표 */}
       <Card className="bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 border-0 overflow-hidden relative">
-        <CardContent className="p-3">
-          <div className="absolute top-0 left-0 right-0 h-12 opacity-20">
+        <CardContent className="p-5">
+          <div className="absolute top-0 left-0 right-0 h-20 opacity-20">
             <svg className="w-full h-full" viewBox="0 0 400 60" preserveAspectRatio="none">
               <path d="M0,30 Q100,10 200,30 T400,30 L400,0 L0,0 Z" fill="white" />
-              <path d="M0,40 Q100,20 200,40 T400,40 L400,0 L0,0 Z" fill="white" opacity="0.5" />
             </svg>
           </div>
 
-          <div className="relative space-y-2">
-            {/* 메인 순공시간 */}
+          <div className="relative space-y-3">
+            {/* 메인 타이틀 + 오늘 순공시간 */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-white/90 text-[10px] font-medium mb-0.5">오늘의 순공시간</p>
-                <div className="flex items-baseline gap-1.5">
-                  <h1 className="text-white text-3xl font-bold tracking-tight">
+                <p className="text-white/90 text-lg font-medium mb-1">오늘의 순공시간</p>
+                <div className="flex items-baseline gap-2">
+                  <h1 className="text-white text-6xl font-bold tracking-tight">
                     {totalHours > 0 ? `${totalHours}.${Math.floor(totalMinutes / 6)}` : totalMinutes}
                   </h1>
-                  <span className="text-white/90 text-lg font-semibold">
+                  <span className="text-white/90 text-3xl font-semibold">
                     {totalHours > 0 ? '시간' : '분'}
                   </span>
                 </div>
               </div>
 
-              {/* 최고기록 비교 */}
-              <div className="text-right">
-                <p className="text-white/80 text-[9px]">최고 기록 대비</p>
-                <p className="text-white text-2xl font-bold">
-                  {maxSeconds > 0 ? ((totalSeconds / maxSeconds) * 100).toFixed(0) : 0}%
-                </p>
+              {/* 우측: 최고기록 대비 + 어제 대비 */}
+              <div className="text-right space-y-1">
+                <div>
+                  <p className="text-white/80 text-base">최고기록 대비</p>
+                  <p className="text-white text-4xl font-bold">
+                    {personalBest > 0 ? ((totalSeconds / personalBest) * 100).toFixed(0) : 0}%
+                  </p>
+                </div>
+                <div className="flex items-center justify-end gap-1">
+                  {yesterdayChange >= 0 ? (
+                    <ArrowUp className="h-5 w-5 text-white" />
+                  ) : (
+                    <ArrowDown className="h-5 w-5 text-white" />
+                  )}
+                  <span className="text-white text-xl font-semibold">
+                    어제 {Math.abs(yesterdayChange) > 0 ? formatCompactTime(Math.abs(yesterdayChange)) : '0m'}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* 주요 지표 그리드 */}
-            <div className="grid grid-cols-5 gap-1.5">
-              {/* 연속일 */}
-              <div className="px-1.5 py-1 rounded bg-white/20 backdrop-blur-sm text-center">
-                <p className="text-white/80 text-[8px]">연속</p>
-                <p className="text-white text-xs font-bold">{streak}일</p>
+            {/* 핵심 지표 그리드 */}
+            <div className="grid grid-cols-5 gap-2">
+              <div className="px-2 py-1 rounded bg-white/20 backdrop-blur-sm text-center">
+                <p className="text-white/80 text-sm">연속</p>
+                <p className="text-white text-2xl font-bold">{streak}일</p>
               </div>
 
-              {/* 주간 변화 */}
-              <div className="px-1.5 py-1 rounded bg-white/20 backdrop-blur-sm text-center">
-                <p className="text-white/80 text-[8px]">이번주</p>
-                <div className="flex items-center justify-center gap-0.5">
+              <div className="px-2 py-1 rounded bg-white/20 backdrop-blur-sm text-center">
+                <p className="text-white/80 text-sm">주간</p>
+                <div className="flex items-center justify-center gap-1">
                   {weeklyComparison.change >= 0 ? (
-                    <ArrowUp className="h-2 w-2 text-white" />
+                    <ArrowUp className="h-4 w-4 text-white" />
                   ) : (
-                    <ArrowDown className="h-2 w-2 text-white" />
+                    <ArrowDown className="h-4 w-4 text-white" />
                   )}
-                  <p className="text-white text-xs font-bold">
+                  <p className="text-white text-2xl font-bold">
                     {weeklyComparison.changePercent.toFixed(0)}%
                   </p>
                 </div>
               </div>
 
-              {/* 7일 평균 */}
-              <div className="px-1.5 py-1 rounded bg-white/20 backdrop-blur-sm text-center">
-                <p className="text-white/80 text-[8px]">7일평균</p>
-                <p className="text-white text-xs font-bold">
-                  {Math.floor(avg7Days / 3600) > 0
-                    ? `${Math.floor(avg7Days / 3600)}h`
-                    : `${Math.floor(avg7Days / 60)}m`}
-                </p>
+              <div className="px-2 py-1 rounded bg-white/20 backdrop-blur-sm text-center">
+                <p className="text-white/80 text-sm">7일평균</p>
+                <p className="text-white text-2xl font-bold">{formatCompactTime(avg7Days)}</p>
               </div>
 
-              {/* 30일 평균 */}
-              <div className="px-1.5 py-1 rounded bg-white/20 backdrop-blur-sm text-center">
-                <p className="text-white/80 text-[8px]">30일평균</p>
-                <p className="text-white text-xs font-bold">
-                  {Math.floor(avg30Days / 3600) > 0
-                    ? `${Math.floor(avg30Days / 3600)}h`
-                    : `${Math.floor(avg30Days / 60)}m`}
-                </p>
+              <div className="px-2 py-1 rounded bg-white/20 backdrop-blur-sm text-center">
+                <p className="text-white/80 text-sm">30일평균</p>
+                <p className="text-white text-2xl font-bold">{formatCompactTime(avg30Days)}</p>
               </div>
 
-              {/* 과목수 */}
-              <div className="px-1.5 py-1 rounded bg-white/20 backdrop-blur-sm text-center">
-                <p className="text-white/80 text-[8px]">과목</p>
-                <p className="text-white text-xs font-bold">{todayStats.length}</p>
+              <div className="px-2 py-1 rounded bg-white/20 backdrop-blur-sm text-center">
+                <p className="text-white/80 text-sm">최장</p>
+                <p className="text-white text-2xl font-bold">{maxStreak}일</p>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* 통합 그래프 카드 - 주간 추이 + 요일별 평균 */}
-      <Card>
-        <CardHeader className="pb-2 px-3 pt-2.5">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xs font-semibold">주간 학습 패턴</CardTitle>
+      {/* 압축 인사이트 카드 */}
+      {(mostStudied || bestTimeSlot || bestDay.seconds > 0) && (
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <CardContent className="p-4 space-y-2">
             {mostStudied && (
-              <div className="flex items-center gap-1">
-                <Trophy className="h-3 w-3 text-orange-500" />
-                <span className="text-[9px] font-semibold text-gray-700">{mostStudied.subject_name}</span>
+              <div className="flex items-center gap-3">
+                <Trophy className="h-6 w-6 text-orange-500 flex-shrink-0" />
+                <p className="text-lg font-medium text-gray-700 flex-1">
+                  <span className="font-bold">{mostStudied.subject_name}</span>를 가장 많이 공부했어요
+                  <span className="text-blue-600 font-bold ml-2">
+                    ({formatTimeString(mostStudied.total_seconds)})
+                  </span>
+                </p>
               </div>
             )}
-          </div>
+            {bestTimeSlot && bestTimeSlot.totalSeconds > 0 && (
+              <div className="flex items-center gap-3">
+                <Clock className="h-6 w-6 text-purple-500 flex-shrink-0" />
+                <p className="text-lg font-medium text-gray-700 flex-1">
+                  가장 집중되는 시간대는 <span className="font-bold">{bestTimeSlot.label}시간</span>
+                  <span className="text-purple-600 font-bold ml-2">
+                    ({formatCompactTime(bestTimeSlot.totalSeconds)})
+                  </span>
+                </p>
+              </div>
+            )}
+            {bestDay.seconds > 0 && (
+              <div className="flex items-center gap-3">
+                <Calendar className="h-6 w-6 text-green-500 flex-shrink-0" />
+                <p className="text-lg font-medium text-gray-700 flex-1">
+                  <span className="font-bold">{bestDay.day}요일</span>에 평균적으로 가장 많이 공부해요
+                  <span className="text-green-600 font-bold ml-2">
+                    ({formatCompactTime(bestDay.seconds)})
+                  </span>
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 요일별 평균 + 시간대별 패턴 */}
+      <Card>
+        <CardHeader className="pb-3 px-5 pt-4">
+          <CardTitle className="text-2xl font-semibold">학습 패턴</CardTitle>
         </CardHeader>
-        <CardContent className="px-3 pb-2.5">
-          {/* 주간 막대 그래프 */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {weeklyData.map((day, index) => {
-              const date = new Date(day.date)
-              const dayName = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()]
-              const isToday = index === weeklyData.length - 1
-              const barHeight = weeklyData.length > 0 ? (day.totalSeconds / Math.max(...weeklyData.map(d => d.totalSeconds), 1)) * 100 : 0
-
-              return (
-                <div key={day.date} className="flex flex-col items-center">
-                  <div className="w-full h-16 bg-gray-100 rounded flex items-end justify-center overflow-hidden">
-                    <div
-                      className={`w-full rounded-t transition-all duration-500 ${isToday ? 'bg-gradient-to-t from-orange-400 to-pink-500' : 'bg-gray-300'}`}
-                      style={{ height: `${barHeight}%` }}
-                    />
-                  </div>
-                  <span className="text-[9px] font-semibold text-gray-700 mt-1">{dayName}</span>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* 과목별 분포 (컴팩트) */}
-          {sortedStats.length > 0 && (
-            <div className="grid grid-cols-3 gap-1.5 pt-2 border-t">
-              {sortedStats.slice(0, 3).map((stat) => {
-                const percentage = totalSeconds > 0 ? (stat.total_seconds / totalSeconds) * 100 : 0
+        <CardContent className="px-5 pb-4 space-y-4">
+          {/* 요일별 평균 */}
+          <div>
+            <p className="text-base font-semibold text-gray-600 mb-2">요일별 평균</p>
+            <div className="grid grid-cols-7 gap-1">
+              {dayOfWeekData.map((day) => {
+                const barHeight = (day.seconds / maxDaySeconds) * 100
 
                 return (
-                  <div key={stat.subject_id} className="flex items-center gap-1">
-                    <div
-                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: stat.subject_color }}
-                    />
+                  <div key={day.day} className="flex flex-col items-center">
+                    <div className="w-full h-20 bg-gray-100 rounded flex items-end justify-center overflow-hidden">
+                      <div
+                        className="w-full rounded-t bg-blue-400 transition-all duration-500"
+                        style={{ height: `${barHeight}%` }}
+                      />
+                    </div>
+                    <span className="text-base font-semibold text-gray-700 mt-1">{day.day}</span>
+                    <span className="text-sm text-gray-500">
+                      {day.seconds > 0 ? formatCompactTime(day.seconds) : '-'}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* 시간대별 분포 */}
+          <div className="pt-3 border-t">
+            <p className="text-base font-semibold text-gray-600 mb-2">시간대별 분포</p>
+            <div className="grid grid-cols-3 gap-2">
+              {timeSlots.map((slot) => {
+                const Icon = slot.icon
+                const percentage = totalSeconds > 0 ? (slot.totalSeconds / totalSeconds) * 100 : 0
+
+                return (
+                  <div key={slot.slot} className="flex items-center gap-2 px-2 py-1 bg-gray-50 rounded">
+                    <Icon className="h-5 w-5 text-gray-500 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[9px] font-medium truncate">{stat.subject_name}</p>
+                      <p className="text-base font-medium text-gray-700">{slot.label}</p>
                       <div className="flex items-center gap-1">
-                        <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                           <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${percentage}%`,
-                              backgroundColor: stat.subject_color
-                            }}
+                            className="h-full bg-purple-500 rounded-full"
+                            style={{ width: `${percentage}%` }}
                           />
                         </div>
-                        <span className="text-[8px] font-bold text-gray-600">{percentage.toFixed(0)}%</span>
+                        <span className="text-sm font-bold text-gray-600">{percentage.toFixed(0)}%</span>
                       </div>
                     </div>
                   </div>
                 )
               })}
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* 통합 업적 카드 - 업적 + 인사이트 */}
+      {/* 업적 & 목표 */}
       <Card>
-        <CardHeader className="pb-2 px-3 pt-2.5">
-          <CardTitle className="text-xs font-semibold">업적 & 목표</CardTitle>
+        <CardHeader className="pb-3 px-5 pt-4">
+          <CardTitle className="text-2xl font-semibold">업적 & 목표</CardTitle>
         </CardHeader>
-        <CardContent className="px-3 pb-2.5 space-y-2">
-          {/* 업적 그리드 (2x2) */}
-          <div className="grid grid-cols-4 gap-1.5">
+        <CardContent className="px-5 pb-4 space-y-4">
+          {/* 업적 그리드 */}
+          <div className="grid grid-cols-4 gap-2">
             {achievements.map((achievement) => {
               const Icon = {
                 trophy: Trophy,
@@ -470,43 +595,65 @@ export function StudyStatistics({ studentId }: StudyStatisticsProps) {
               return (
                 <div
                   key={achievement.id}
-                  className={`p-1.5 rounded border transition-all ${
+                  className={`p-2 rounded border transition-all ${
                     achievement.unlocked
                       ? 'bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-300'
                       : 'bg-gray-50 border-gray-200 opacity-40'
                   }`}
                 >
                   <div className="flex flex-col items-center text-center">
-                    <div className={`h-7 w-7 rounded-full flex items-center justify-center ${
+                    <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
                       achievement.unlocked ? 'bg-yellow-400' : 'bg-gray-300'
                     }`}>
-                      <Icon className={`h-3.5 w-3.5 ${achievement.unlocked ? 'text-yellow-900' : 'text-gray-500'}`} />
+                      <Icon className={`h-6 w-6 ${achievement.unlocked ? 'text-yellow-900' : 'text-gray-500'}`} />
                     </div>
-                    <p className="text-[8px] font-bold leading-tight mt-0.5">{achievement.title}</p>
+                    <p className="text-sm font-bold leading-tight mt-1">{achievement.title}</p>
                   </div>
                 </div>
               )
             })}
           </div>
 
-          {/* 목표 진행 바 */}
-          <div className="p-2 bg-gradient-to-r from-purple-50 to-pink-50 rounded border border-purple-200">
+          {/* 주간 목표 진행 */}
+          <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded border border-purple-200">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[9px] font-semibold text-purple-900">주간 목표 (20시간)</span>
-              <span className="text-[9px] font-bold text-purple-700">
-                {formatTimeString(weeklyComparison.thisWeek)}
+              <span className="text-base font-semibold text-purple-900">주간 목표 (20시간)</span>
+              <span className="text-base font-bold text-purple-700">
+                {formatCompactTime(weeklyComparison.thisWeek)}
               </span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="flex-1 h-2 bg-purple-200 rounded-full overflow-hidden">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-3 bg-purple-200 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-purple-500 to-pink-600 rounded-full transition-all duration-500"
                   style={{ width: `${Math.min((weeklyComparison.thisWeek / (20 * 3600)) * 100, 100)}%` }}
                 />
               </div>
-              <span className="text-xs font-bold text-purple-700">
+              <span className="text-lg font-bold text-purple-700">
                 {((weeklyComparison.thisWeek / (20 * 3600)) * 100).toFixed(0)}%
               </span>
+            </div>
+          </div>
+
+          {/* 이번 주 vs 지난 주 비교 */}
+          <div className="flex items-center justify-between text-base pt-2 border-t">
+            <div className="text-center flex-1">
+              <p className="text-gray-500 mb-1">지난주</p>
+              <p className="font-bold text-gray-700 text-lg">{formatCompactTime(weeklyComparison.lastWeek)}</p>
+            </div>
+            <div className="flex items-center gap-1">
+              {weeklyComparison.change >= 0 ? (
+                <ArrowUp className="h-6 w-6 text-green-500" />
+              ) : (
+                <ArrowDown className="h-6 w-6 text-red-500" />
+              )}
+              <span className={`font-bold text-lg ${weeklyComparison.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatCompactTime(Math.abs(weeklyComparison.change))}
+              </span>
+            </div>
+            <div className="text-center flex-1">
+              <p className="text-gray-500 mb-1">이번주</p>
+              <p className="font-bold text-blue-700 text-lg">{formatCompactTime(weeklyComparison.thisWeek)}</p>
             </div>
           </div>
         </CardContent>

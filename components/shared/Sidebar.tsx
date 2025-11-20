@@ -127,7 +127,7 @@ export function Sidebar() {
   const [navigation, setNavigation] = useState<NavigationItem[]>([])
   const [sidebarWidth, setSidebarWidth] = useState(256) // 기본 값 64 * 4 = 256px (w-64)
   const [isResizing, setIsResizing] = useState(false)
-  const [organizationName, setOrganizationName] = useState('ClassFlow OS')
+  const [organizationName, setOrganizationName] = useState('GoldPen')
   const [organizationLogo, setOrganizationLogo] = useState('')
   const sidebarRef = useRef<HTMLDivElement>(null)
 

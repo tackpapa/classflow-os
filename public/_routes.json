@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developers.cloudflare.com/pages/functions/routing/_routes-schema.json",
+  "version": 1,
+  "description": "Route /api/* requests to Cloudflare Workers, everything else to Pages",
+  "include": [
+    "/*"
+  ],
+  "exclude": [
+    "/api/*"
+  ]
+}
